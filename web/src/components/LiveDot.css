@@ -1,0 +1,11 @@
+.live-dot { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); white-space: nowrap; }
+.live-dot--on-dark { color: var(--text-on-brand); }
+.live-dot i { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.live-dot--live i { background: var(--deal-good); animation: live-pulse 2s infinite; }
+.live-dot--replay i { background: var(--coin-face); }
+.live-dot--connecting i { background: var(--flag-warn); }
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(30 142 90 / 0.55); }
+  70% { box-shadow: 0 0 0 8px rgb(30 142 90 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(30 142 90 / 0); }
+}

@@ -1,0 +1,36 @@
+.app-bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: var(--space-6);
+  min-height: 64px; padding: 0 var(--space-6);
+  background: var(--bg-brand); color: var(--text-on-brand);
+}
+.app-bar a { color: inherit; text-decoration: none; }
+.app-bar__brand { display: flex; align-items: center; gap: 10px; }
+.app-bar__right { margin-left: auto; display: flex; align-items: center; gap: var(--space-6); }
+.app-bar__right a[aria-current='page'] { text-decoration: underline; text-underline-offset: 6px; }
+.app-bar__user {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--coin-face); color: #002F6C; font: 700 13px var(--font-display);
+}
+.seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--bg-surface); }
+.seg__btn { border: 0; background: none; cursor: pointer; padding: 7px 22px; border-radius: 8px; color: var(--text-primary); }
+.seg__btn[aria-selected='true'] { background: var(--bg-brand); color: var(--text-on-brand); }
+
+.app-main { padding: var(--space-6); }
+
+/* Step-1 scaffold list (replaced by ListingCard in step 2) */
+.scaffold { display: grid; gap: var(--space-3); max-width: 720px; }
+.scaffold__note { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--bg-subtle); border: 1px dashed var(--border); }
+.scaffold__row {
+  display: grid; grid-template-columns: 1fr auto; gap: 4px var(--space-4); align-items: baseline;
+  padding: var(--space-4); border-radius: var(--radius-md);
+  background: var(--bg-surface); box-shadow: var(--shadow-card); color: inherit; text-decoration: none;
+}
+.scaffold__row.is-fresh { box-shadow: var(--glow-deal); }
+.deal-good { color: var(--deal-good); } .deal-bad { color: var(--deal-bad); } .deal-fair { color: var(--text-muted); }
+
+@media (max-width: 720px) {
+  .app-bar { flex-wrap: wrap; gap: var(--space-3); padding: var(--space-2) var(--space-4); }
+  .app-bar .live-dot { display: none; }
+  .app-main { padding: var(--space-4); }
+}
