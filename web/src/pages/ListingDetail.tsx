@@ -36,6 +36,12 @@ export default function ListingDetail() {
         {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)} · ${t(`confidence.${l.score.confidence}`)}`}
       </p>
       <p className="t-body-s">{l.flags.map((f) => flagLabel(f) + (f.status === 'error' ? ` (${t('flag.failed')})` : f.status === 'pending' ? ` ${t('flag.checking')}` : '')).join(' · ') || t('detail.noFlags')}</p>
+      {l.also_on && Object.keys(l.also_on).length > 0 && (
+        <p className="t-body-s muted">
+          {t('detail.alsoOn')}{' '}
+          {Object.entries(l.also_on).map(([p, x], i) => x && <span key={p}>{i > 0 && ' · '}<a href={x.url} target="_blank" rel="noreferrer">{p[0].toUpperCase() + p.slice(1)}{x.price ? ` (${eur(x.price)})` : ''}</a></span>)}
+        </p>
+      )}
       <p className="t-num-s muted">{t('detail.calls', { n: callRows.filter((c) => !c.endpoint.startsWith('gemini')).length })}</p>
     </div>
     <AnalystPanel listing={l} lang={lang} />
