@@ -167,6 +167,7 @@ Fair value blends the model with the median of nearby comparable listings. If a 
 | Context.dev scrape (JSON schema) | Extract each listing's fields | `lib/ingest/portals.mjs`, `lib/enrich.mjs` |
 | Context.dev scrape (PDF parser) | Renovation plans and loans from attachments | `lib/flags/documents.mjs` |
 | City of Helsinki permit register (WFS open data) | Significant street works and traffic diversions within 150 m of the flat | `lib/flags/streetworks.mjs` |
+| Context.dev scrape, Oikotie page 1 every 10 min | Oikotie renders its results client-side and monitor page targets can't wait for that, so the server polls it (`POLL_MINUTES`) | `lib/monitors.mjs` (`pollUnmonitored`) |
 | Context.dev scrape, search pages 2–12 (hourly) | Price sweep: price drops on listings no longer on page 1 | `lib/monitors.mjs` (`sweepPrices`) |
 | Context.dev batch | Backfill hundreds of listings for training and comparables | `scripts/backfill.mjs` |
 | Gemini API | Plain-English verdict, extra hidden costs (quote-checked), questions for the agent | `lib/insight.mjs` |

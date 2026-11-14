@@ -7,7 +7,7 @@ import path from 'node:path';
 import { context, call, telemetry } from './lib/context.mjs';
 import getDb, { client } from './lib/db.mjs';
 import { bus } from './lib/bus.mjs';
-import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, processSearchPage, sweepPrices } from './lib/monitors.mjs';
+import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, processSearchPage, sweepPrices, pollUnmonitored } from './lib/monitors.mjs';
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
 import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
@@ -245,6 +245,12 @@ server.listen(PORT, HOST, () => {
   setInterval(loadStreetWorks, 30 * 60 * 1000).unref();
   setTimeout(() => resumeEnrich(startedAt), 5_000);
   setTimeout(() => resumeGemini(startedAt), 10_000);
+  // Page 1 of portals a monitor can't watch (Oikotie), on a timer. Deployed instance only, as it spends credits.
+  const pollMin = Number(process.env.POLL_MINUTES ?? 10);
+  if (PUBLIC_URL && pollMin > 0) {
+    setTimeout(() => pollUnmonitored(), 60 * 1000);
+    setInterval(() => pollUnmonitored(), pollMin * 60 * 1000).unref();
+  }
   // Price sweep over search pages 2…N (page 1 is the monitors' job). Deployed instance only, as it spends credits.
   const sweepMin = Number(process.env.PRICE_SWEEP_MINUTES ?? 60);
   if (PUBLIC_URL && sweepMin > 0) {
