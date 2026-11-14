@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { AdvancedImage, lazyload, placeholder } from '@cloudinary/react';
+import { CldImage } from './CldImage';
 import { coverPhoto, thumb } from '../lib/cloudinary';
 import { Link } from 'react-router-dom';
 import { ago, agoShort, factsLine, perM2, pricePerM2, priceLabel, shortAddress, shortDistrict } from '../lib/format';
@@ -48,10 +48,10 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
       onBlur={onHover && (() => onHover(null))}
     >
       {cover && l.media && (
-        <AdvancedImage
+        <CldImage
           className="lcard__photo"
           cldImg={thumb(l.media.cloud, cover, 640, 320)}
-          plugins={[lazyload(), placeholder({ mode: 'blur' })]}
+          lazy
           width={640}
           height={320}
           alt=""

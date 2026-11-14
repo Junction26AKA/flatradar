@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AdvancedImage, lazyload, placeholder } from '@cloudinary/react';
 import { large, mediaPhotos, renovated, RENOVATION_PROMPTS, shareCardPath, thumb } from '../lib/cloudinary';
 import { flagLabel } from '../lib/flagText';
 import { eur } from '../lib/format';
 import { useI18n } from '../lib/i18n';
 import type { Flag, Listing, MediaPhoto } from '../lib/types';
+import { CldImage } from './CldImage';
 import { FlagChip } from './FlagChip';
 import './ListingPhotos.css';
 
@@ -60,10 +60,9 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
         {renovating ? (
           <BeforeAfter cloud={cloud} photo={p} />
         ) : (
-          <AdvancedImage
+          <CldImage
             key={p.public_id}
             cldImg={large(cloud, p)}
-            plugins={[placeholder({ mode: 'blur' })]}
             alt={`${t('ph.photo', { n: i + 1 })}: ${t(`ph.room.${p.room}`)}`}
             width={p.width}
             height={p.height}
@@ -96,7 +95,7 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
         {photos.map((ph, n) => (
           <li key={ph.public_id}>
             <button type="button" className="photos__thumb" aria-current={n === i ? 'true' : undefined} onClick={() => setSel(n)} aria-label={`${t('ph.photo', { n: n + 1 })}: ${t(`ph.room.${ph.room}`)}`}>
-              <AdvancedImage cldImg={thumb(cloud, ph, 160, 120)} plugins={[lazyload(), placeholder({ mode: 'blur' })]} width={80} height={60} alt="" />
+              <CldImage cldImg={thumb(cloud, ph, 160, 120)} lazy width={80} height={60} alt="" />
               {photoFlags.some((f) => f.photo === n && f.severity !== 'info') && <i className="photos__dot" aria-hidden="true" />}
             </button>
           </li>
