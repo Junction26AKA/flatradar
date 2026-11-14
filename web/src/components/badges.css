@@ -1,0 +1,35 @@
+/* DealBadge */
+.deal {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  border-radius: var(--radius-full); color: var(--text-inverse);
+  font: 500 16px/20px var(--font-mono); font-variant-numeric: tabular-nums;
+  padding: 4px 12px;
+}
+.deal--s { font-size: 12px; line-height: 16px; padding: 2px 8px; }
+.deal--good { background: var(--deal-good); }
+.deal--bad { background: var(--deal-bad); }
+.deal--fair { background: var(--bg-brand); color: var(--text-on-brand); }
+.deal--glow { box-shadow: var(--glow-deal); }
+
+/* Price change */
+.pchange { font: 600 12px/16px var(--font-body); padding: 3px 8px; border-radius: var(--radius-sm); white-space: nowrap; }
+.pchange--down { color: var(--deal-good); background: color-mix(in srgb, var(--deal-good) 14%, transparent); }
+.pchange--up { color: var(--deal-bad); background: color-mix(in srgb, var(--deal-bad) 12%, transparent); }
+
+/* FlagChip */
+.chip {
+  --c: var(--border-brand);
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  padding: 3px 10px; border-radius: var(--radius-full);
+  border: 1.5px solid var(--c); background: var(--bg-surface); color: var(--text-primary);
+  font: 600 12px/16px var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: chip-in 0.35s var(--ease-out);
+}
+.chip--warn { --c: var(--flag-warn); color: var(--flag-warn); }
+.chip--high { --c: var(--deal-bad); color: var(--deal-bad); }
+.chip--pending { --c: var(--border); color: var(--text-muted); border-style: dashed; font-weight: 500; }
+.chip--error { --c: var(--border); color: var(--text-muted); text-decoration: line-through; }
+.chip__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.chip__spin { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--text-muted); border-right-color: transparent; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes chip-in { from { transform: scale(0.85); opacity: 0; } }

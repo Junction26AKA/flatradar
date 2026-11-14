@@ -42,6 +42,18 @@ export function ago(iso: string | null | undefined, now = Date.now()): string {
   return `${Math.round(h / 24)} d ago`;
 }
 
+/** "Laajasalo, Kruunuvuorenranta, Helsinki" → "Laajasalo" */
+export const shortDistrict = (l: Listing) => l.district?.split(',')[0].trim() || null;
+/** "Wavulinintie 5, Helsinki" → "Wavulinintie 5" */
+export const shortAddress = (l: Listing) => l.address?.replace(/,\s*(\d{5}\s*)?Helsinki$/i, '').trim() || l._id;
+
+const dec1 = new Intl.NumberFormat('fi-FI', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+/** Sale: "6 646 €/m²". Rent: "18,3 €/m²/mo" (monthly rent is small, so one decimal). */
+export function perM2(n: number | null | undefined, kind: Listing['kind']): string {
+  if (n == null) return '—';
+  return kind === 'rent' ? `${dec1.format(n)} €/m²/mo` : `${int.format(n)} €/m²`;
+}
+
 export const factsLine = (l: Listing) =>
   [l.rooms_description ?? (l.rooms ? `${l.rooms} rooms` : null), l.m2 ? m2(l.m2) : null, l.year, l.floor != null && l.floors_total ? `${l.floor}/${l.floors_total}` : null]
     .filter(Boolean)

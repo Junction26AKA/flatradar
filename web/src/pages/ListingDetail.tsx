@@ -23,7 +23,7 @@ export default function ListingDetail() {
   const callRows = calls[id]?.length ? calls[id] : detail?.calls ?? [];
 
   return (
-    <aside className="scaffold__note">
+    <div className="detail-scaffold">
       <p className="t-eyebrow muted">{l._id}</p>
       <h2 className="t-h3">{l.address}</h2>
       <p className="t-num-m">
@@ -31,6 +31,6 @@ export default function ListingDetail() {
       </p>
       <p className="t-body-s">{l.flags.map((f) => `${f.label} (${f.status})`).join(' · ') || 'no flags yet'}</p>
       <p className="t-num-s muted">{callRows.length} Context.dev calls recorded</p>
-    </aside>
+    </div>
   );
 }
