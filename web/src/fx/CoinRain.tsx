@@ -26,24 +26,52 @@ const PALETTE = {
   lost: { face: '#8A2A24', edge: '#4E1512', shine: '#C8362E' },
 };
 
-function drawCoin(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, phase: number, kind: Kind) {
+// ---- Sprites ---------------------------------------------------------------------------------
+// Drawing ellipses + a "€" glyph per coin per frame was the main cost on phones. Instead each coin look is
+// rendered once into small offscreen canvases (one per spin step) and blitted with drawImage.
+const SPIN_STEPS = 12;
+const SPRITE_R = 28; // sprite radius in sprite pixels (scaled down when drawn)
+
+function renderCoinSprite(kind: Kind, widthFrac: number, scale: number): HTMLCanvasElement {
   const c = PALETTE[kind];
-  const w = Math.max(0.12, Math.abs(Math.cos(phase))) * r; // spinning on its vertical axis
-  ctx.fillStyle = c.edge;
-  ctx.beginPath(); ctx.ellipse(x, y + r * 0.12, w, r, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = c.face;
-  ctx.beginPath(); ctx.ellipse(x, y, w, r, 0, 0, Math.PI * 2); ctx.fill();
+  const r = SPRITE_R * scale;
+  const cv = document.createElement('canvas');
+  cv.width = Math.ceil(r * 2 + 4);
+  cv.height = Math.ceil(r * 2.24 + 4);
+  const g = cv.getContext('2d')!;
+  const x = cv.width / 2, y = r + 2;
+  const w = Math.max(0.12, widthFrac) * r;
+  g.fillStyle = c.edge;
+  g.beginPath(); g.ellipse(x, y + r * 0.12, w, r, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = c.face;
+  g.beginPath(); g.ellipse(x, y, w, r, 0, 0, Math.PI * 2); g.fill();
   if (w > r * 0.55) {
-    ctx.strokeStyle = c.edge; ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(1, r * 0.09);
-    ctx.beginPath(); ctx.ellipse(x, y, w * 0.74, r * 0.74, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = c.edge;
-    ctx.font = `700 ${Math.round(r * 0.95)}px "Space Grotesk", sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.save(); ctx.translate(x, y); ctx.scale(w / r, 1); ctx.fillText('€', 0, r * 0.05); ctx.restore();
-    ctx.strokeStyle = c.shine; ctx.lineWidth = Math.max(1, r * 0.13); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.ellipse(x, y, w * 0.8, r * 0.8, 0, Math.PI * 1.15, Math.PI * 1.45); ctx.stroke();
+    g.strokeStyle = c.edge; g.globalAlpha = 0.55; g.lineWidth = Math.max(1, r * 0.09);
+    g.beginPath(); g.ellipse(x, y, w * 0.74, r * 0.74, 0, 0, Math.PI * 2); g.stroke();
+    g.globalAlpha = 1;
+    g.fillStyle = c.edge;
+    g.font = `700 ${Math.round(r * 0.95)}px "Space Grotesk", sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.save(); g.translate(x, y); g.scale(w / r, 1); g.fillText('€', 0, r * 0.05); g.restore();
+    g.strokeStyle = c.shine; g.lineWidth = Math.max(1, r * 0.13); g.lineCap = 'round';
+    g.beginPath(); g.ellipse(x, y, w * 0.8, r * 0.8, 0, Math.PI * 1.15, Math.PI * 1.45); g.stroke();
   }
+  return cv;
+}
+
+type Sprites = Record<Kind, HTMLCanvasElement[]>;
+function buildSprites(dpr: number): Sprites {
+  const steps = (kind: Kind) => Array.from({ length: SPIN_STEPS }, (_, i) => renderCoinSprite(kind, Math.abs(Math.cos((i / SPIN_STEPS) * Math.PI)), dpr));
+  return { gold: steps('gold'), lost: steps('lost') };
+}
+
+function drawCoin(ctx: CanvasRenderingContext2D, sprites: Sprites, x: number, y: number, r: number, phase: number, kind: Kind) {
+  const k = ((Math.floor((phase / Math.PI) * SPIN_STEPS) % SPIN_STEPS) + SPIN_STEPS) % SPIN_STEPS;
+  const img = sprites[kind][k];
+  const s = r / SPRITE_R;
+  const w = (SPRITE_R * 2 + 4) * s; // sprite box in CSS px at this radius (sprite pixels are dpr-scaled)
+  const h = w * (img.height / img.width);
+  ctx.drawImage(img, x - w / 2, y - r - 2 * s, w, h);
 }
 
 /** A flat coin seen from the side, for the pile. */
@@ -82,14 +110,28 @@ export function CoinRain({ progress, velocity, lite = false, still = false }: Pr
     let last = performance.now();
     let raf = 0;
     let lastP = progress.get();
+    let sprites: Sprites | null = null;
+    // The pile changes slowly: draw it into its own layer and only redraw when a column moved > 1.5 px.
+    const pileCv = document.createElement('canvas');
+    const pileCtx = pileCv.getContext('2d')!;
+    const drawnPile = new Float32Array(COLS).fill(-1);
 
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = canvas.clientWidth; h = canvas.clientHeight;
+      // Phones: 1.5x is visually the same for moving coins and ~45% fewer pixels to fill than 2x/3x.
+      const nextDpr = Math.min(window.devicePixelRatio || 1, lite ? 1.5 : 2);
+      const nw = canvas.clientWidth, nh = canvas.clientHeight;
+      if (nw === w && nh === h && nextDpr === dpr && sprites) return; // nothing changed (avoid clearing the canvas)
+      w = nw; h = nh;
+      if (nextDpr !== dpr || !sprites) { dpr = nextDpr; sprites = buildSprites(dpr); }
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pileCv.width = canvas.width; pileCv.height = canvas.height;
+      pileCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawnPile.fill(-1);
     };
     resize();
+    // The "€" is drawn in Space Grotesk: rebuild the sprites once the web font has loaded.
+    document.fonts?.ready.then(() => { sprites = buildSprites(dpr); }).catch(() => {});
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
@@ -183,18 +225,25 @@ export function CoinRain({ progress, velocity, lite = false, still = false }: Pr
           if (c.y < -80 && c.vy < 0) { coins.splice(i, 1); continue; }
           if (c.x < -40 || c.x > w + 40) { coins.splice(i, 1); continue; }
         }
-        drawCoin(ctx, c.x, c.y, c.r, c.phase, c.kind);
+        drawCoin(ctx, sprites!, c.x, c.y, c.r, c.phase, c.kind);
       }
 
-      // pile: stacked flat coins per column, back to front
-      const r = (w / COLS) * 0.72;
-      const step = r * 0.42;
-      for (let i = 0; i < COLS; i++) {
-        const height = pile[i];
-        if (height < 2) continue;
-        const x = colX(i) + Math.sin(i * 12.9) * r * 0.25;
-        for (let y = h + r * 0.1; y > h - height; y -= step) drawFlat(ctx, x + Math.sin(y * 0.13 + i) * r * 0.12, y, r);
+      // pile: stacked flat coins per column, back to front (cached layer)
+      let dirty = false;
+      for (let i = 0; i < COLS; i++) if (Math.abs(pile[i] - drawnPile[i]) > 1.5) { dirty = true; break; }
+      if (dirty) {
+        pileCtx.clearRect(0, 0, w, h);
+        const r = (w / COLS) * 0.72;
+        const step = r * 0.42;
+        for (let i = 0; i < COLS; i++) {
+          drawnPile[i] = pile[i];
+          const height = pile[i];
+          if (height < 2) continue;
+          const x = colX(i) + Math.sin(i * 12.9) * r * 0.25;
+          for (let y = h + r * 0.1; y > h - height; y -= step) drawFlat(pileCtx, x + Math.sin(y * 0.13 + i) * r * 0.12, y, r);
+        }
       }
+      ctx.drawImage(pileCv, 0, 0, w, h);
 
       raf = requestAnimationFrame(frame);
     };

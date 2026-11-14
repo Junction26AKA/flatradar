@@ -2,6 +2,15 @@
    Layers (back → front): background, flag/cross, house (3D or 2.5D), overlays, coin rain, text panels, nav. */
 
 .lp { --ink: #FFFFFF; --ink-muted: rgb(255 255 255 / 0.82); --gutter: clamp(16px, 4.5vw, 64px); color: var(--ink); background: #002F6C; }
+/* The landing story is designed in the light Finnish palette: cards, badges and chips inside it stay light
+   even when the phone is in dark mode (the ticker cards turned navy on a white chapter). */
+.lp {
+  color-scheme: light;
+  --bg-page: #E8EEF6; --bg-surface: #FFFFFF; --bg-subtle: #F5F8FC; --bg-brand: #002F6C;
+  --text-primary: #002F6C; --text-muted: #4A6FA5; --text-inverse: #FFFFFF; --text-link: #002F6C;
+  --border: #C9D6E8; --border-brand: #002F6C;
+  --deal-good: #1E8E5A; --deal-bad: #C8362E; --flag-warn: #D98E04;
+}
 .lp--dark { --ink: #002F6C; --ink-muted: #4A6FA5; }
 .lp a { color: inherit; }
 
@@ -34,7 +43,7 @@
 
 /* stage */
 .lp__story { position: relative; }
-.lp__stage { position: sticky; top: 0; height: 100dvh; overflow: hidden; }
+.lp__stage { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; contain: layout paint; }
 .lp__bg { position: absolute; inset: 0; z-index: 0; }
 .lp__house { position: absolute; inset: 0; z-index: 2; }
 .stage3d { position: absolute !important; inset: 0; }
@@ -55,7 +64,7 @@
 /* text panels */
 .lp__panel {
   position: absolute; z-index: 5; left: var(--gutter); top: 18vh; width: min(560px, 44vw);
-  color: var(--ink); will-change: opacity, transform;
+  color: var(--ink); will-change: opacity, transform; backface-visibility: hidden;
 }
 .lp__panel--light { --ink: #FFFFFF; --ink-muted: rgb(255 255 255 / 0.82); }
 .lp__panel--dark { --ink: #002F6C; --ink-muted: #4A6FA5; }
@@ -135,10 +144,11 @@
 
 /* 2.5D house (phones, reduced motion, no WebGL) */
 .h2d { position: absolute; right: 12%; top: 50%; width: min(300px, 26vw); aspect-ratio: 240 / 280; transform: translateY(-46%); perspective: 900px; }
-.h2d__card { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
-.h2d__face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; filter: drop-shadow(0 18px 24px rgb(0 47 108 / 0.25)); }
+.h2d__card { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform; }
+.h2d__face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.h2d__shadow { position: absolute; left: 6%; right: 6%; bottom: -4%; height: 8%; border-radius: 50%; background: radial-gradient(closest-side, rgb(0 47 108 / 0.28), transparent); }
 .h2d__face--back { transform: rotateY(180deg); }
-.h2d__cracks { opacity: calc(0.25 + var(--crack, 0) * 0.75); filter: drop-shadow(0 0 calc(var(--crack, 0) * 6px) #C8362E); }
+.h2d__cracks { opacity: calc(0.25 + var(--crack, 0) * 0.75); }
 
 /* tablets: keep 3D, tighten overlays */
 @media (max-width: 1100px) {
@@ -164,14 +174,19 @@
   .lp__flags { left: 50%; top: 70%; }
   .lp__fly .chip { font-size: 12px; max-width: calc(100vw - 48px); }
   .lp__quote { width: 220px; }
-  .lp__towers { left: 16px; right: 16px; top: auto; height: 44vh; bottom: 4vh; }
-  .lp__stack { height: 22vh; }
+  .lp__towers { left: 16px; right: 16px; top: 36vh; bottom: 14vh; height: auto; gap: 12px; }
+  .lp__towerrow { gap: 8px; }
+  .lp__stack { height: 20vh; }
+  .lp__stack svg { width: 34px; height: 34px; }
+  .lp__beam .t-num-l { font-size: 20px; }
+  .lp__towersub { font-size: 11px; line-height: 14px; }
   .lp__flag-v { left: 38%; width: 14vw; }
   .lp__flag-h { top: 22%; height: 12vh; transform-origin: 45% 50%; }
   .lp__panel--cta .lp__sub { background: #fff; padding: 10px 12px; border-radius: 12px; }
   .lp__panel--cta { left: 16px; right: 16px; top: calc(22% + 6vh); width: auto; }
   .lp__panel--cta .t-h1 { font-size: 26px; }
   .lp__panel--cta .lp__ctas { margin-top: calc(6vh + 24px); }
-  .lp__piggy { right: 50%; transform: translateX(50%); width: 56vw; bottom: 3vh; }
+  /* centred with margins: motion owns this element's transform (fade-up), so a CSS translate would be overwritten */
+  .lp__piggy { right: auto; left: 50%; margin-left: -28vw; width: 56vw; bottom: 3vh; }
   .lp__ticker > * { flex-basis: 250px; }
 }
