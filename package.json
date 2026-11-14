@@ -14,5 +14,8 @@
     "context.dev": "^3.29.0",
     "mongodb": "^7.9.0",
     "p-limit": "^7.3.3"
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }
