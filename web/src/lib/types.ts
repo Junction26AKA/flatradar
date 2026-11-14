@@ -2,7 +2,7 @@
 // Read-only on our side: if something here needs to change, change the contract first.
 
 export type Kind = 'sale' | 'rent';
-export type Portal = 'etuovi' | 'vuokraovi' | 'mock';
+export type Portal = 'etuovi' | 'vuokraovi' | 'oikotie' | 'mock';
 export type Confidence = 'low' | 'medium' | 'high';
 
 export interface Comp {
@@ -150,6 +150,10 @@ export interface Listing {
   first_seen_at: string;
   last_seen_at?: string;
   price_history?: PricePoint[];
+  /** the same flat seen on other portals, keyed by portal (set by the diff instead of storing a duplicate) */
+  also_on?: Partial<Record<Portal, { id: string; url: string; price: number | null; seen_at: string }>>;
+  /** the latest search-card price drop (set by the diff), so the badge survives a reload */
+  last_price_drop?: { old_price: number; new_price: number; at: string } | null;
   score: Score | null;
   flags: Flag[];
   insight?: Insight | null;

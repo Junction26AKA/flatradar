@@ -41,8 +41,12 @@ const byNewest = (byId: Record<string, Listing>) => (a: string, b: string) =>
 function reducer(s: FeedState, a: Action): FeedState {
   if (a.type === 'loaded') {
     const byId = { ...s.byId };
-    for (const l of a.items) byId[l._id] = { ...l, ...byId[l._id] }; // stream data that already arrived wins
-    return { ...s, byId, order: Object.keys(byId).sort(byNewest(byId)), source: a.source, loading: false };
+    const priceChanges = { ...s.priceChanges };
+    for (const l of a.items) {
+      byId[l._id] = { ...l, ...byId[l._id] }; // stream data that already arrived wins
+      if (l.last_price_drop && !priceChanges[l._id]) priceChanges[l._id] = l.last_price_drop;
+    }
+    return { ...s, byId, priceChanges, order: Object.keys(byId).sort(byNewest(byId)), source: a.source, loading: false };
   }
   const e = a.event;
   switch (e.type) {

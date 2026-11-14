@@ -16,7 +16,7 @@ const real = (l: Listing) => l.portal !== 'mock';
 
 export interface LandingData {
   source: Source | null;
-  /** Σ (asking − fair) over overpriced sale listings first seen in the last 7 days */
+  /** Σ (asking − fair) over overpriced sale listings first seen in the last 7 days (medium/high confidence only) */
   overpricing: number;
   overpricedCount: number;
   /** chapter 2: an overpriced flat (asking vs fair) */
@@ -56,7 +56,7 @@ export function useLandingData(): LandingData {
     let overpricing = 0, overpricedCount = 0;
     for (const l of pool) {
       const ask = askingPrice(l);
-      if (!l.score || l.score.deal_pct <= 0 || ask == null || now - Date.parse(l.first_seen_at) > WEEK) continue;
+      if (!l.score || l.score.confidence === 'low' || l.score.deal_pct <= 0 || ask == null || now - Date.parse(l.first_seen_at) > WEEK) continue;
       overpricing += ask - l.score.fair_price;
       overpricedCount++;
     }

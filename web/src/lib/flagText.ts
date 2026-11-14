@@ -3,7 +3,7 @@ import type { Flag } from './types';
 
 /**
  * Flag chip text. The backend writes English labels from a fixed set of templates
- * (lib/flags/renovations.mjs, neighbourhood.mjs, enrich.mjs). In Finnish we translate each template
+ * (lib/flags/renovations.mjs, streetworks.mjs, enrich.mjs). In Finnish we translate each template
  * exactly, keeping its details (year, loan %, fee, street). A label we don't recognise (e.g. one written by
  * the document parser) is shown as the backend wrote it: an untranslated label is better than a vaguer,
  * possibly wrong one. Detail sentences and source quotes are left as they are.
@@ -38,6 +38,9 @@ const RULES: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Leased plot$/, () => 'Vuokratontti'],
   [/^Right-of-occupancy flat$/, () => 'Asumisoikeusasunto'],
   [/^Part-ownership flat$/, () => 'Osaomistusasunto'],
+  [/^Street works (\d+) m away \(until (\d{4})\)$/, (m) => `Katutöitä ${m[1]} m päässä (${m[2]} asti)`],
+  [/^Traffic diversion (\d+) m away \(until (\d{4})\)$/, (m) => `Liikennejärjestelyjä ${m[1]} m päässä (${m[2]} asti)`],
+  [/^Checking street works…$/, () => 'Tarkistetaan katutöitä…'],
   [/^Checking local news…$/, () => 'Tarkistetaan paikallisuutisia…'],
   [/^Reading documents…$/, () => 'Luetaan asiakirjoja…'],
 ];

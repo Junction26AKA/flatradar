@@ -12,15 +12,15 @@ flowchart LR
     direction TB
     EO["Etuovi · flats for sale"]
     VO["Vuokraovi · flats for rent"]
+    OT["Oikotie · sale + rent"]
     MOCK["/mock · our demo page"]
-    NEWS["News sites"]
     PDF["Listing PDFs"]
   end
 
   subgraph ctx["Context.dev"]
     direction TB
     MON["Monitors<br/>every 10 min"]
-    API["Scrape · extract · news<br/>PDF parse · batch"]
+    API["Scrape · extract<br/>PDF parse · batch"]
   end
 
   subgraph render["Render"]
@@ -30,6 +30,7 @@ flowchart LR
   end
 
   GEM["Gemini API"]
+  HEL["City of Helsinki<br/>street-works permits"]
   MDB[("MongoDB Atlas")]
   SG["SendGrid"]
   UI["React dashboard"]
@@ -45,6 +46,7 @@ flowchart LR
   NODE -- "alert emails" --> SG
   NODE -- "SSE /stream" --> UI
   STAT -. "baselines (offline)" .-> SCORER
+  HEL -. "permit register (every 30 min)" .-> NODE
 ```
 
 - **One Node process** does ingestion, enrichment, the API, the SSE stream and alerts. It needs to stay running because of SSE and the in-process event bus. On Render's free tier it is kept awake by a GitHub Actions ping to `/api/health` every 5 minutes (`.github/workflows/keepalive.yml`).
@@ -78,7 +80,7 @@ sequenceDiagram
   N-->>UI: listing.updated (full details)
   par fan-out (section 3)
     N->>S: POST /score
-    N->>C: news search (street, district)
+    N->>N: street works within 150 m (cached city permit register)
     N->>C: parse attachment PDFs
   end
   N-->>UI: listing.updated (score, flags as each lands)
@@ -104,7 +106,7 @@ flowchart TD
   EXTRACT --> RULES["Rule flags (instant, no API)<br/>renovations, company loan, leased plot, high fee"]
   RULES --> FAN{{"Promise.allSettled"}}
   FAN --> SCORE["Score<br/>scorer → comparables fallback"]
-  FAN --> NEWSF["News flags<br/>Context.dev news search"]
+  FAN --> NEWSF["Street-works flags<br/>City of Helsinki permits, in memory"]
   FAN --> DOCS["PDF flags<br/>Context.dev parse, same rules on the extracted text"]
   SCORE & NEWSF & DOCS --> READY["status: ready<br/>alerts fire"]
   READY -.-> GEMINI["Gemini analyst (background)<br/>lib/insight.mjs"]
@@ -164,7 +166,9 @@ Fair value blends the model with the median of nearby comparable listings. If a 
 | Context.dev scrape (markdown) | Read search pages to diff the cards | `lib/monitors.mjs` |
 | Context.dev scrape (JSON schema) | Extract each listing's fields | `lib/ingest/portals.mjs`, `lib/enrich.mjs` |
 | Context.dev scrape (PDF parser) | Renovation plans and loans from attachments | `lib/flags/documents.mjs` |
-| Context.dev news search | Street works and construction near the flat | `lib/flags/neighbourhood.mjs` |
+| City of Helsinki permit register (WFS open data) | Significant street works and traffic diversions within 150 m of the flat | `lib/flags/streetworks.mjs` |
+| Context.dev scrape, Oikotie page 1 every 10 min | Oikotie renders its results client-side and monitor page targets can't wait for that, so the server polls it (`POLL_MINUTES`) | `lib/monitors.mjs` (`pollUnmonitored`) |
+| Context.dev scrape, search pages 2–12 (hourly) | Price sweep: price drops on listings no longer on page 1 | `lib/monitors.mjs` (`sweepPrices`) |
 | Context.dev batch | Backfill hundreds of listings for training and comparables | `scripts/backfill.mjs` |
 | Gemini API | Plain-English verdict, extra hidden costs (quote-checked), questions for the agent | `lib/insight.mjs` |
 | MongoDB Atlas | Storage, `$geoNear` comparables | `lib/db.mjs`, `model/common.py` |

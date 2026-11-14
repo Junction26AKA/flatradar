@@ -59,7 +59,7 @@ export const MESSAGES = {
   'lp.signIn': { en: 'Sign in', fi: 'Kirjaudu' },
   'lp.start': { en: 'Start saving →', fi: 'Ala säästää →' },
   'lp.open': { en: 'Open FlatRadar →', fi: 'Avaa FlatRadar →' },
-  'lp.eyebrow': { en: 'Helsinki · live on Etuovi + Vuokraovi', fi: 'Helsinki · livenä Etuovesta ja Vuokraovesta' },
+  'lp.eyebrow': { en: 'Helsinki · live on Etuovi, Vuokraovi + Oikotie', fi: 'Helsinki · livenä Etuovesta, Vuokraovesta ja Oikotieltä' },
   'lp.hero': { en: 'Stop overpaying for Helsinki flats.', fi: 'Älä maksa ylihintaa Helsingin asunnoista.' }, // covers renters too
   'lp.heroSub': {
     en: 'Every new listing scored against comparable flats, an ML model and Statistics Finland prices, in seconds, with the hidden costs called out.',
@@ -73,13 +73,13 @@ export const MESSAGES = {
   'lp.hint': { en: 'scroll ↓ to watch the money', fi: 'vieritä ↓ ja seuraa rahaa' },
   'lp.priceH': { en: 'We know what it’s really worth.', fi: 'Tiedämme, minkä arvoinen se oikeasti on.' },
   'lp.priceSub': {
-    en: 'Comparable flats within 1 km, a model trained on Helsinki listings, and Statistics Finland’s postcode prices, blended into one fair price.',
-    fi: 'Vertailuasunnot kilometrin säteellä, helsinkiläisillä ilmoituksilla opetettu malli ja Tilastokeskuksen postinumerokohtaiset hinnat yhdistettynä yhdeksi käyväksi hinnaksi.',
+    en: 'Comparable flats on the market within 1 km (2.5 km where they’re sparse), a model trained on Helsinki listings, and Statistics Finland’s postcode prices, blended into one fair price.',
+    fi: 'Myynnissä olevat vertailuasunnot kilometrin säteellä (harvaan asutulla alueella 2,5 km), helsinkiläisillä ilmoituksilla opetettu malli ja Tilastokeskuksen postinumerokohtaiset hinnat yhdistettynä yhdeksi käyväksi hinnaksi.',
   },
   'lp.costsH': { en: 'See the costs they don’t put in the headline.', fi: 'Näe kulut, joita otsikossa ei kerrota.' },
   'lp.costsSub': {
-    en: 'We read the renovation plans, the housing company’s papers and local news, so a “cheap” flat with a pipe renovation next year doesn’t look cheap any more.',
-    fi: 'Luemme korjaussuunnitelmat, taloyhtiön paperit ja paikallisuutiset, joten ”halpa” asunto, jossa on ensi vuonna putkiremontti, ei enää näytä halvalta.',
+    en: 'We read the renovation plans, the housing company’s papers and the city’s street-works permits, so a “cheap” flat with a pipe renovation next year doesn’t look cheap any more.',
+    fi: 'Luemme korjaussuunnitelmat, taloyhtiön paperit ja kaupungin katutyöluvat, joten ”halpa” asunto, jossa on ensi vuonna putkiremontti, ei enää näytä halvalta.',
   },
   'lp.pricingH': { en: 'Three sources. One fair price.', fi: 'Kolme lähdettä. Yksi käypä hinta.' },
   'lp.pricingSub': {
@@ -90,7 +90,7 @@ export const MESSAGES = {
     en: (v: { n: string }) => `${v.n} flats for sale watched`,
     fi: (v: { n: string }) => `${v.n} myytävää asuntoa seurannassa`,
   },
-  'lp.livePillNone': { en: 'Watching Etuovi + Vuokraovi', fi: 'Seurataan Etuovea ja Vuokraovea' },
+  'lp.livePillNone': { en: 'Watching Etuovi, Vuokraovi + Oikotie', fi: 'Seurataan Etuovea, Vuokraovea ja Oikotietä' },
   'lp.liveH': { en: 'Watching Helsinki right now.', fi: 'Seuraamme Helsinkiä juuri nyt.' },
   'lp.liveSub': {
     en: 'New listings and price drops are scored within seconds. Good deals light up and land in your inbox.',
@@ -152,7 +152,9 @@ export const MESSAGES = {
   'detail.loading': { en: 'Loading…', fi: 'Ladataan…' },
   'detail.notFound': { en: 'Listing not found.', fi: 'Ilmoitusta ei löytynyt.' },
   'detail.back': { en: 'Back to feed', fi: 'Takaisin syötteeseen' },
+  'detail.openPortal': { en: (v: { site: string }) => `View on ${v.site} ↗`, fi: (v: { site: string }) => `Avaa ${v.site} ↗` },
   'detail.noFlags': { en: 'no flags yet', fi: 'ei huomioita vielä' },
+  'detail.alsoOn': { en: 'Also listed on', fi: 'Myös täällä:' },
   'detail.calls': { en: (v: { n: number }) => `${v.n} Context.dev calls recorded`, fi: (v: { n: number }) => `${v.n} Context.dev-kutsua tallennettu` },
 
   // ---- photos (Cloudinary)
