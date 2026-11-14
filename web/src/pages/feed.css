@@ -6,7 +6,7 @@
 }
 .feed--detail { grid-template-columns: minmax(340px, 420px) minmax(0, 1fr) minmax(360px, 432px); }
 
-.feed__list { overflow-y: auto; overscroll-behavior: contain; padding: 2px 6px var(--space-8) 2px; margin: -2px -6px 0 -2px; scrollbar-width: thin; }
+.feed__list { overflow-y: auto; overscroll-behavior: contain; padding: 12px 6px var(--space-8) 2px; margin: -2px -6px 0 -2px; scrollbar-width: thin; }
 /* top: -2px covers .feed__list's 2px top padding, or scrolled cards peek through above the header. */
 .feed__head { position: sticky; top: -2px; z-index: 2; display: grid; gap: var(--space-3); padding-bottom: var(--space-4); background: var(--bg-page); }
 .feed__head h1 { display: flex; align-items: baseline; gap: 10px; }
@@ -21,7 +21,7 @@
 }
 @keyframes toast-in { from { transform: translateY(-8px) scale(0.95); opacity: 0; } }
 
-.feed__cards { display: grid; gap: 14px; padding-top: 12px; } /* room for the first card's match tag, which pokes 10px above it, below the sticky header */
+.feed__cards { display: grid; gap: 14px; }
 .feed__item { position: relative; }
 .feed__item > .fav { position: absolute; top: 10px; right: 10px; z-index: 2; }
 /* keep the "seen …" text clear of the heart when the card has no photo */
