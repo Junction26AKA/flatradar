@@ -93,7 +93,12 @@ export function FeedProvider({ children }: { children: ReactNode }) {
     // Fetch each kind separately: rentals far outnumber sales, so one mixed "newest 100" would hide the sales.
     const ac = new AbortController();
     Promise.all((['sale', 'rent'] as const).map((k) => getListings(k, 150, ac.signal)))
-      .then(([s, r]) => dispatch({ type: 'loaded', items: [...s.data, ...r.data], source: s.source === 'live' || r.source === 'live' ? 'live' : 'fixtures' }))
+      .then((rs) => {
+        // If either kind came from the server, show only server data: never mix fixtures into a live feed.
+        const live = rs.filter((r) => r.source === 'live');
+        const use = live.length ? live : rs;
+        dispatch({ type: 'loaded', items: use.flatMap((r) => r.data), source: live.length ? 'live' : 'fixtures' });
+      })
       .catch(() => {});
     return () => ac.abort();
   }, []);

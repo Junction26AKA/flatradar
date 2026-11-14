@@ -30,7 +30,21 @@ function pinLabel(l: Listing) {
 function icon(l: Listing, state: { selected: boolean; hover: boolean; fresh: boolean }) {
   const tone = l.score ? dealTone(l.score.deal_pct) : 'none';
   const cls = ['pin', `pin--${tone}`, state.selected && 'pin--selected', state.hover && 'pin--hover', state.fresh && 'pin--fresh'].filter(Boolean).join(' ');
-  return L.divIcon({ className: 'pin-wrap', html: `<span class="${cls}">${pinLabel(l)}</span>`, iconSize: undefined, iconAnchor: [0, 0] });
+  return divIcon(`<span class="${cls}">${pinLabel(l)}</span>`);
+}
+
+// The feed re-renders every second (the "seen N s ago" clock). react-leaflet calls setIcon whenever the icon
+// object changes, and Leaflet then rewrites the marker's HTML, which restarts the drop animation and breaks the
+// hover transition. Same HTML → same icon object, so unchanged markers are left alone.
+const icons = new Map<string, L.DivIcon>();
+function divIcon(html: string): L.DivIcon {
+  let i = icons.get(html);
+  if (!i) {
+    if (icons.size > 2000) icons.clear();
+    i = L.divIcon({ className: 'pin-wrap', html, iconSize: undefined, iconAnchor: [0, 0] });
+    icons.set(html, i);
+  }
+  return i;
 }
 
 // Leaflet computes NaN coordinates (and throws) if you move a map that has no size, e.g. while it's
@@ -124,11 +138,9 @@ function bestLabel(best: number | null) {
 function clusterIcon(count: number, best: number | null, hover: boolean) {
   const tone = best == null ? 'none' : dealTone(best);
   const size = count < 10 ? 's' : count < 50 ? 'm' : 'l';
-  return L.divIcon({
-    className: 'pin-wrap',
-    html: `<span class="cluster cluster--${tone} cluster--${size}${hover ? ' cluster--hover' : ''}" title="Best deal inside: ${bestLabel(best) || 'not scored'}"><b>${count}</b>${best != null ? `<small>${bestLabel(best)}</small>` : ''}</span>`,
-    iconAnchor: [0, 0],
-  });
+  return divIcon(
+    `<span class="cluster cluster--${tone} cluster--${size}${hover ? ' cluster--hover' : ''}" title="Best deal inside: ${bestLabel(best) || 'not scored'}"><b>${count}</b>${best != null ? `<small>${bestLabel(best)}</small>` : ''}</span>`,
+  );
 }
 
 function ClusteredPins({ placed, selectedId, hoverId, freshIds, onSelect }: Props2) {
