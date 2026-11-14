@@ -51,3 +51,7 @@
 /* Sold or let: greyed out, still clickable for its history */
 .lcard--gone { opacity: 0.55; filter: grayscale(1); transition: opacity 0.4s, filter 0.4s; }
 .lcard--gone:hover, .lcard--gone:focus-visible { opacity: 0.85; }
+
+/* same flat on several portals (also_on) */
+.lcard__portals { margin: 0; color: var(--text-muted); }
+.lcard__portals.is-cheaper strong { color: var(--deal-good); font-weight: 700; }

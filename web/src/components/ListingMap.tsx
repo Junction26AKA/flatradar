@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { Circle, MapContainer, Marker, Polygon, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import Supercluster from 'supercluster';
 import 'leaflet/dist/leaflet.css';
 import { dealTone } from '../lib/format';
 import { useI18n } from '../lib/i18n';
-import type { Listing, SearchArea } from '../lib/types';
+import type { Listing, SearchArea, SearchPolygon } from '../lib/types';
 import './ListingMap.css';
 
 const HELSINKI: [number, number] = [60.1699, 24.9384];
@@ -18,6 +18,8 @@ interface Props {
   onSelect: (id: string) => void;
   /** Circles from the user's saved searches, drawn under the pins. */
   areas?: SearchArea[];
+  /** Shapes drawn in the user's saved searches. */
+  polygons?: SearchPolygon[];
 }
 
 const latLng = (l: Listing): [number, number] | null =>
@@ -96,7 +98,7 @@ function FitOnce({ points }: { points: [number, number][] }) {
   return null;
 }
 
-export default function ListingMap({ listings, selectedId, hoverId, freshIds = {}, onSelect, areas = [] }: Props) {
+export default function ListingMap({ listings, selectedId, hoverId, freshIds = {}, onSelect, areas = [], polygons = [] }: Props) {
   const placed = useMemo(() => listings.flatMap((l) => { const p = latLng(l); return p ? [{ l, p }] : []; }), [listings]);
   const selected = placed.find((x) => x.l._id === selectedId);
 
@@ -123,6 +125,9 @@ export default function ListingMap({ listings, selectedId, hoverId, freshIds = {
       />
       {areas.map((a, i) => (
         <Circle key={`${a.lat},${a.lng},${a.radius_m},${i}`} center={[a.lat, a.lng]} radius={a.radius_m} interactive={false} pathOptions={{ className: 'lmap__area' }} />
+      ))}
+      {polygons.map((pg, i) => (
+        <Polygon key={`g${i}:${pg.points.length}:${pg.points[0]?.join(',')}`} positions={pg.points} interactive={false} pathOptions={{ className: 'lmap__area' }} />
       ))}
       <FitOnce points={placed.map((x) => x.p)} />
       <FlyTo target={selected?.p ?? null} />

@@ -42,6 +42,7 @@ export default function Feed() {
   const favSet = useMemo(() => new Set(favourites ?? []), [favourites]);
   const savedHere = useMemo(() => all.filter((l) => favSet.has(l._id)).length, [all, favSet]);
   const areas = useMemo(() => (searches ?? []).filter((s) => s.kind === kind).flatMap((s) => s.areas ?? []), [searches, kind]);
+  const polygons = useMemo(() => (searches ?? []).filter((s) => s.kind === kind).flatMap((s) => s.polygons ?? []), [searches, kind]);
   const listings = useMemo(
     () =>
       all.filter((l) =>
@@ -117,7 +118,7 @@ export default function Feed() {
 
       <section className="feed__map" aria-label={t('feed.mapLabel')}>
         <Suspense fallback={<div className="feed__mapload" />}>
-          <ListingMap listings={listings} selectedId={selectedId} hoverId={hoverId} freshIds={fresh} onSelect={open} areas={areas} />
+          <ListingMap listings={listings} selectedId={selectedId} hoverId={hoverId} freshIds={fresh} onSelect={open} areas={areas} polygons={polygons} />
         </Suspense>
       </section>
 

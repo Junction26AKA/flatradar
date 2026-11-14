@@ -14,6 +14,8 @@ import { alertForListing } from './lib/alerts/index.mjs';
 import { mediaEnabled, ownPublicId, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
 import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
 import { ensureListingMonitor } from './lib/listing-monitors.mjs';
+import { geocode, ensureCommutes, routingEnabled, commuteKey, estimateMin, distanceM, backfillCommutes } from './lib/geo.mjs';
+import { parseSearch, EXCLUDABLE } from './lib/nlsearch.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -42,18 +44,36 @@ const readBody = (req, limit = 1_000_000) => new Promise((resolve, reject) => {
 const readJson = async (req) => { const b = await readBody(req); return b.length ? JSON.parse(b.toString('utf8')) : {}; };
 const isAdmin = (req) => !ADMIN_TOKEN || req.headers['x-admin-token'] === ADMIN_TOKEN;
 
-/** Saved search as stored: drops unknown keys and keeps at most 5 valid map areas (radius 200 m – 20 km). */
+const isLatLng = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+const label = (v) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 80) : undefined);
+
+/**
+ * Saved search as stored: drops unknown keys and keeps at most 5 valid map areas (radius 200 m – 20 km),
+ * 3 drawn polygons (3–100 points), one commute target (5–120 min) and known hidden-cost flag types to exclude.
+ */
 function cleanSearch(s) {
   const areas = (Array.isArray(s?.areas) ? s.areas : [])
-    .filter((a) => Number.isFinite(a?.lat) && Number.isFinite(a?.lng) && Number.isFinite(a?.radius_m) && Math.abs(a.lat) <= 90 && Math.abs(a.lng) <= 180)
+    .filter((a) => isLatLng(a?.lat, a?.lng) && Number.isFinite(a?.radius_m))
     .slice(0, 5)
-    .map((a) => ({ lat: a.lat, lng: a.lng, radius_m: Math.min(20_000, Math.max(200, Math.round(a.radius_m))) }));
+    .map((a) => ({ lat: a.lat, lng: a.lng, radius_m: Math.min(20_000, Math.max(200, Math.round(a.radius_m))), ...(label(a.label) ? { label: label(a.label) } : {}) }));
+  const polygons = (Array.isArray(s?.polygons) ? s.polygons : [])
+    .map((pg) => (Array.isArray(pg?.points) ? pg.points : []).filter((pt) => Array.isArray(pt) && isLatLng(pt[0], pt[1])).slice(0, 100).map(([lat, lng]) => [+lat.toFixed(5), +lng.toFixed(5)]))
+    .filter((pts) => pts.length >= 3)
+    .slice(0, 3)
+    .map((points) => ({ points }));
+  const c = s?.commute;
+  const commute = c && isLatLng(c.lat, c.lng) && Number.isFinite(Number(c.max_min))
+    ? { label: label(c.label) ?? `${(+c.lat).toFixed(4)}, ${(+c.lng).toFixed(4)}`, lat: c.lat, lng: c.lng, max_min: Math.min(120, Math.max(5, Math.round(Number(c.max_min)))) }
+    : null;
   return {
     kind: s?.kind === 'rent' ? 'rent' : 'sale',
     max_price: Number(s?.max_price) || null,
     min_rooms: Number(s?.min_rooms) || null,
     postcodes: Array.isArray(s?.postcodes) ? s.postcodes.filter((p) => /^\d{5}$/.test(p)).slice(0, 30) : [],
     areas,
+    polygons,
+    commute,
+    exclude_flags: Array.isArray(s?.exclude_flags) ? [...new Set(s.exclude_flags.filter((f) => EXCLUDABLE.includes(f)))] : [],
     ...(Array.isArray(s?.districts) ? { districts: s.districts.filter((d) => typeof d === 'string').slice(0, 30) } : {}),
     min_deal: s?.min_deal == null || !Number.isFinite(Number(s.min_deal)) ? null : Number(s.min_deal),
   };
@@ -154,6 +174,26 @@ async function route(req, res) {
   }
 
   let m;
+  // Commute from one listing to one of the signed-in user's commute targets: the cached HSL time, else ask the
+  // planner (cached on the listing and pushed over SSE), else the estimate. Only the user's own saved targets, so
+  // callers can't make us plan (and store) arbitrary points.
+  if ((m = p.match(/^\/api\/listings\/(.+)\/commute$/)) && req.method === 'GET') {
+    const me = await currentUser(req);
+    if (!me) return send(res, 401, { error: 'not signed in' });
+    const lat = Number(url.searchParams.get('lat')), lng = Number(url.searchParams.get('lng'));
+    if (!isLatLng(lat, lng)) return send(res, 400, { error: 'lat and lng required' });
+    const key = commuteKey(lat, lng);
+    const target = (me.searches ?? []).map((s) => s.commute).find((c) => c && commuteKey(c.lat, c.lng) === key);
+    if (!target) return send(res, 403, { error: 'not one of your commute places' });
+    const l = await db.collection('listings').findOne({ _id: decodeURIComponent(m[1]) }, { projection: { _id: 1, loc: 1, commutes: 1 } });
+    const c = l?.loc?.coordinates;
+    if (!c) return send(res, 404, { error: 'listing has no location' });
+    const commutes = await ensureCommutes(l, [target]).catch(() => l.commutes ?? {});
+    const v = commutes[key];
+    if (v?.min != null) return send(res, 200, { ...v, routing: routingEnabled });
+    return send(res, 200, { min: estimateMin(distanceM(c[1], c[0], lat, lng)), src: 'estimate', routing: routingEnabled, at: new Date() });
+  }
+
   // Share card (Cloudinary overlay URL): redirects, so <img src> and links keep working if the deal changes.
   if ((m = p.match(/^\/api\/listings\/(.+)\/card$/)) && req.method === 'GET') {
     const listing = await db.collection('listings').findOne({ _id: decodeURIComponent(m[1]) }, { projection: { doc_extracts: 0 } });
@@ -183,8 +223,30 @@ async function route(req, res) {
     const searches = Array.isArray(b.searches) ? b.searches.slice(0, 5).map(cleanSearch) : [];
     const set = { name: b.name ?? null, searches, updated_at: new Date(), ...(b.password ? { password_hash: await hashPassword(b.password) } : {}) };
     const r = await db.collection('users').findOneAndUpdate({ email }, { $set: set, $setOnInsert: { email, created_at: new Date() } }, { upsert: true, returnDocument: 'after' });
+    // Commute searches: fetch HSL planner times for recent listings in the background (no-op without a key).
+    for (const kind of ['sale', 'rent']) {
+      const targets = searches.filter((x) => x.kind === kind && x.commute).map((x) => x.commute);
+      if (targets.length) backfillCommutes(targets, kind).then((n) => n && log(`commute times for ${n} ${kind} listings`)).catch((e) => log('commute backfill failed', e.message));
+    }
     // Signing up with a password also signs you in.
     return send(res, 200, { id: r._id }, b.password ? { 'Set-Cookie': await startSession(r._id) } : {});
+  }
+
+  // Natural-language search → a draft saved search (not stored). Signed-in only: it spends Gemini tokens.
+  if (p === '/api/search/parse' && req.method === 'POST') {
+    if (!(await currentUser(req))) return send(res, 401, { error: 'not signed in' });
+    const b = await readJson(req);
+    if (typeof b.text !== 'string' || b.text.trim().length < 3) return send(res, 400, { error: 'describe what you are looking for' });
+    const out = await parseSearch(b.text);
+    return send(res, 200, { ...out, search: cleanSearch(out.search) });
+  }
+
+  // Place search for commute targets (Digitransit, else OpenStreetMap). Signed-in only; cached and throttled in lib/geo.
+  if (p === '/api/geocode' && req.method === 'GET') {
+    if (!(await currentUser(req))) return send(res, 401, { error: 'not signed in' });
+    const q = url.searchParams.get('q') ?? '';
+    if (q.trim().length < 2) return send(res, 200, { items: [] });
+    return send(res, 200, { items: await geocode(q).catch(() => []) });
   }
 
   // Favourites (signed-in users): heart a listing to keep it, and get an email when its price drops.

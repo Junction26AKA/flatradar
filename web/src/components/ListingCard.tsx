@@ -2,10 +2,11 @@ import { memo } from 'react';
 import { CldImage } from './CldImage';
 import { coverPhoto, thumb } from '../lib/cloudinary';
 import { Link } from 'react-router-dom';
-import { ago, agoShort, factsLine, perM2, pricePerM2, priceLabel, shortAddress, shortDistrict } from '../lib/format';
+import { ago, agoShort, eur, factsLine, perM2, pricePerM2, priceLabel, shortAddress, shortDistrict } from '../lib/format';
 import { useI18n } from '../lib/i18n';
 import type { PriceChange } from '../lib/store';
 import type { Listing } from '../lib/types';
+import { cheaperElsewhere, portalName, portalPrices } from '../lib/portals';
 import { DealBadge, PriceChangeBadge } from './DealBadge';
 import { FlagChip, sortFlags } from './FlagChip';
 import './ListingCard.css';
@@ -37,6 +38,8 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
   const good = score != null && score.deal_pct <= -0.03;
   const cover = compact ? null : coverPhoto(l);
   const gone = !!l.removed_at;
+  const portals = portalPrices(l).length;
+  const cheaper = portals > 1 ? cheaperElsewhere(l) : null;
 
   return (
     <Link
@@ -87,6 +90,13 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
         )}
         {priceChange && <PriceChangeBadge oldPrice={priceChange.old_price} newPrice={priceChange.new_price} />}
       </div>
+
+      {portals > 1 && (
+        <p className={`lcard__portals t-num-s${cheaper ? ' is-cheaper' : ''}`} title={t('card.portalsTitle')}>
+          ⇄ {t('card.portals', { n: portals })}
+          {cheaper && <> · <strong>{t('card.cheaperOn', { eur: eur(-cheaper.diff!), site: portalName(cheaper.portal) })}</strong></>}
+        </p>
+      )}
 
       <p className="t-num-s lcard__perm2">
         {perM2(pricePerM2(l), l.kind)}
