@@ -111,8 +111,9 @@ async function route(req, res) {
   }
 
   if (p === '/api/health') {
-    const [monitors, last] = await Promise.all([
-      db.collection('monitors').find({}, { projection: { secret: 0 } }).toArray(),
+    const [monitors, listingMonitors, last] = await Promise.all([
+      db.collection('monitors').find({ kind: { $ne: 'listing' } }, { projection: { secret: 0 } }).toArray(),
+      db.collection('monitors').countDocuments({ kind: 'listing' }),
       db.collection('webhook_events').find().sort({ at: -1 }).limit(1).next(),
     ]);
     const counts = await db.collection('listings').aggregate([{ $group: { _id: '$kind', n: { $sum: 1 } } }]).toArray();
@@ -121,7 +122,7 @@ async function route(req, res) {
     const scorer = scorerUrl
       ? await fetch(`${scorerUrl}/health`, { signal: AbortSignal.timeout(2500) }).then((r) => r.json()).catch((e) => ({ ok: false, error: e.name }))
       : null;
-    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer, street_works: streetWorksStatus() });
+    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, listing_monitors: listingMonitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer, street_works: streetWorksStatus() });
   }
 
   if (p === '/api/listings' && req.method === 'GET') {
@@ -197,6 +198,12 @@ async function route(req, res) {
   if (p === '/admin/monitors' && req.method === 'POST') {
     if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
     return send(res, 200, { monitors: await ensureMonitors(PUBLIC_URL) });
+  }
+  if (p === '/admin/listing-monitors' && req.method === 'POST') {
+    if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
+    const b = await readJson(req);
+    const { backfillListingMonitors } = await import('./lib/listing-monitors.mjs');
+    return send(res, 200, await backfillListingMonitors(b.max != null ? { max: Number(b.max) } : {}));
   }
   if (p === '/admin/poll' && req.method === 'POST') {
     if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
