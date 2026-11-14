@@ -4,7 +4,7 @@ import { AnalystPanel } from '../components/AnalystPanel';
 import { ListingPhotos } from '../components/ListingPhotos';
 import { getListing } from '../lib/api';
 import { FlagChip, sortFlags } from '../components/FlagChip';
-import { eur, factsLine } from '../lib/format';
+import { ago, eur, factsLine } from '../lib/format';
 import { useI18n } from '../lib/i18n';
 import { useFeed } from '../lib/store';
 import type { ListingDetail as Detail, Portal } from '../lib/types';
@@ -34,7 +34,13 @@ export default function ListingDetail() {
     <>
     <div className="detail-scaffold">
       <h2 className="t-h3">{l.address}</h2>
+      {l.removed_at && (
+        <p><span className="sold t-label" title={t('card.soldTitle', { ago: ago(l.removed_at, Date.now()) })}>{t(l.kind === 'rent' ? 'card.let' : 'card.sold')}</span></p>
+      )}
       <p className="t-body-s muted">{factsLine(l)}</p>
+      {l.removed_at && (
+        <p className="t-body-s"><span className="sold t-label">{t(l.kind === 'rent' ? 'card.let' : 'card.sold')}</span> {t('card.soldTitle', { ago: ago(l.removed_at) })}</p>
+      )}
       {l.url && PORTAL_NAMES[l.portal] && (
         <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
           {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
