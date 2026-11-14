@@ -90,7 +90,7 @@ export default function Searches() {
 
       {error && <p className="srch__error" role="alert">{isMessageKey(error) ? t(error) : error}</p>}
 
-      {!full && (
+      {!full && typeof editing !== 'number' && (
         <DescribeSearch
           onParsed={(parsed) => { setDraft((d) => ({ parsed, key: (d?.key ?? 0) + 1 })); setEditing('new'); }}
         />
