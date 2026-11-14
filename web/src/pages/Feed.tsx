@@ -125,8 +125,12 @@ function useNewDealToast(all: Listing[], fresh: Record<string, number>) {
     if (!hit?.score) return;
     shown.current.add(hit._id);
     setToast({ id: hit._id, where: shortDistrict(hit) ?? '', deal: dealLabel(hit.score.deal_pct) });
+  }, [all, fresh]);
+  // The hide timer depends only on the toast: listing updates keep changing `all`, and must not cancel it.
+  useEffect(() => {
+    if (!toast) return;
     const t = setTimeout(() => setToast(null), 8000);
     return () => clearTimeout(t);
-  }, [all, fresh]);
+  }, [toast]);
   return toast;
 }

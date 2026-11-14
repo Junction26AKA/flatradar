@@ -30,7 +30,7 @@
   animation: shimmer 1.4s linear infinite;
 }
 
-.feed__map { position: relative; min-height: 0; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-card); }
+.feed__map { position: relative; isolation: isolate; /* keeps Leaflet's z-index 1000 controls under the drawer */ min-height: 0; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-card); }
 .feed__mapload { height: 100%; background: var(--bg-subtle); }
 
 .feed__detail {
