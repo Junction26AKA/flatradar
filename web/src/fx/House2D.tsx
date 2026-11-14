@@ -1,5 +1,5 @@
 import { motion, useTransform, type MotionValue } from 'motion/react';
-import { HOUSE, track } from './chapters';
+import { HOUSE, ramp, track } from './chapters';
 
 /**
  * Phones / reduced motion: no WebGL. The Figma house's front and back faces as two SVG cards that
@@ -32,16 +32,19 @@ function Face({ back = false }: { back?: boolean }) {
   );
 }
 
-export function House2D({ progress }: { progress: MotionValue<number> }) {
+export function House2D({ progress, narrow = false }: { progress: MotionValue<number>; narrow?: boolean }) {
   const rotateY = useTransform(progress, (p) => (track(HOUSE.rotY, p) * 180) / Math.PI);
   const scale = useTransform(progress, (p) => track(HOUSE.scale, p));
   const cracks = useTransform(progress, (p) => track(HOUSE.crackGlow, p));
+  // On phones the house has no room next to the coin towers / ticker: it bows out after the costs chapter.
+  const opacity = useTransform(progress, (p) => (narrow ? 1 - ramp(p, 0.55, 0.59) : 1));
   return (
-    <div className="h2d">
+    <motion.div className="h2d" style={{ opacity }}>
+      <span className="h2d__shadow" aria-hidden="true" />
       <motion.div className="h2d__card" style={{ rotateY, scale, ['--crack' as string]: cracks }}>
         <Face />
         <Face back />
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

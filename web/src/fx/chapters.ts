@@ -65,11 +65,11 @@ export const COINS = {
   /** "lost money" (dark red, heavier) instead of gold */
   lost: (p: number) => p > 0.38 && p < 0.55,
   /** pile height as a fraction of the viewport height: grows with savings, shrinks with hidden costs, pours into the bank at the end */
-  pile: [[0, 0.05], [0.15, 0.07], [0.3, 0.16], [0.42, 0.16], [0.52, 0.1], [0.62, 0.07], [0.85, 0.11], [0.92, 0.12], [0.99, 0], [1, 0]] as [number, number][],
+  pile: [[0, 0.05], [0.15, 0.07], [0.3, 0.16], [0.42, 0.16], [0.52, 0.1], [0.62, 0.07], [0.85, 0.11], [0.93, 0.12], [0.975, 0], [1, 0]] as [number, number][],
   /** the price tag shatters into a burst of coins when scrolling down past this point */
   shatterAt: 0.255,
   /** coins pour from the pile into the piggy bank in this range */
-  pour: [0.92, 0.99] as [number, number],
+  pour: [0.93, 0.975] as [number, number],
 };
 
 /** DOM overlays per chapter (all in progress units) */
@@ -78,7 +78,9 @@ export const OVERLAY = {
   flags: [0.43, 0.5] as [number, number],
   towers: [0.58, 0.7] as [number, number],
   beam: [0.68, 0.74] as [number, number],
-  flag: [0.9, 0.95] as [number, number],
+  flag: [0.895, 0.925] as [number, number],
+  /** CTA copy appears once the flag's band is behind it (white headline needs the blue band) */
+  ctaText: [0.915, 0.935] as [number, number],
 };
 
 export const chapterAt = (p: number) => CHAPTERS.find((c) => p >= c.from && p < c.to) ?? CHAPTERS[CHAPTERS.length - 1];

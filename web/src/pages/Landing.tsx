@@ -61,6 +61,13 @@ export default function Landing() {
   // target-relative progress (the colours drifted by a whole chapter).
   const bg = useTransform(scrollYProgress, chapterBg);
 
+  useEffect(() => {
+    const el = document.documentElement;
+    const prev = el.style.overscrollBehaviorY;
+    el.style.overscrollBehaviorY = 'none';
+    return () => { el.style.overscrollBehaviorY = prev; };
+  }, []);
+
   const jump = (id: string) => scrollToProgress(root.current, (CHAPTERS.find((c) => c.id === id)!.from) + 0.04);
 
   return (
@@ -86,11 +93,11 @@ export default function Landing() {
           <FlagCross progress={scrollYProgress} />
           <div className="lp__house">
             {env.use3D ? (
-              <Suspense fallback={<House2D progress={scrollYProgress} />}>
+              <Suspense fallback={<House2D progress={scrollYProgress} narrow={env.narrow} />}>
                 <Scene3D progress={scrollYProgress} />
               </Suspense>
             ) : (
-              <House2D progress={scrollYProgress} />
+              <House2D progress={scrollYProgress} narrow={env.narrow} />
             )}
           </div>
 
@@ -117,8 +124,9 @@ function Panel({ chapter, progress, active, className = '', children }: { chapte
   const isFirst = c.from === 0;
   const isLast = c.to === 1;
   const opacity = useTransform(progress, (p) => {
-    const fadeIn = isFirst ? 1 : ramp(p, c.from - span * 0.05, c.from + span * 0.18);
-    const fadeOut = isLast ? 1 : 1 - ramp(p, c.to - span * 0.18, c.to + span * 0.02);
+    // Outgoing text is fully gone before the next chapter's text starts (no doubled text mid-scroll).
+    const fadeIn = isFirst ? 1 : chapter === 'cta' ? ramp(p, OVERLAY.ctaText[0], OVERLAY.ctaText[1]) : ramp(p, c.from + span * 0.02, c.from + span * 0.16);
+    const fadeOut = isLast ? 1 : 1 - ramp(p, c.to - span * 0.16, c.to - span * 0.02);
     return Math.min(fadeIn, fadeOut);
   });
   const y = useTransform(opacity, (o) => (1 - o) * 28);
