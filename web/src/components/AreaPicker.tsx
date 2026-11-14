@@ -21,6 +21,17 @@ function ClickToDrop({ onDrop }: { onDrop: (lat: number, lng: number) => void })
   return null;
 }
 
+/** Leaflet measures its box once at mount; inside a just-opened <dialog> that's too early, so re-measure on resize. */
+function FitContainer() {
+  const map = useMap();
+  useEffect(() => {
+    const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
+    ro.observe(map.getContainer());
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
 /** Show every circle and shape on first open (editing a saved search), otherwise the city. */
 function FitAreas({ areas, polygons }: { areas: SearchArea[]; polygons: SearchPolygon[] }) {
   const map = useMap();
@@ -138,6 +149,7 @@ export default function AreaPicker({ value, onChange, polygons = [], onPolygonsC
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             maxZoom={19}
           />
+          <FitContainer />
           {mode === 'pin' && <ClickToDrop onDrop={drop} />}
           {mode === 'draw' && !shapesFull && onPolygonsChange && <FreehandDraw onDone={(points) => onPolygonsChange([...polygons, { points }])} />}
           <FitAreas areas={value} polygons={polygons} />

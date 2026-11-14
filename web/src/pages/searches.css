@@ -80,3 +80,12 @@
 .scard__commute { color: var(--text-primary); }
 .scard__code--ex { border-color: color-mix(in srgb, var(--deal-bad) 40%, var(--border)); }
 @media (max-width: 520px) { .describe__row { flex-direction: column; } }
+
+/* add/edit popup */
+.sdialog {
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+  padding: 0; border: 0; border-radius: 16px; background: transparent; overflow: auto;
+}
+.sdialog::backdrop { background: rgb(0 0 0 / 0.45); }
+.sdialog .srch__error { margin-bottom: var(--space-3); background: var(--bg-surface); }
+.sdialog .scard--form { box-shadow: 0 20px 60px rgb(0 0 0 / 0.3); }
