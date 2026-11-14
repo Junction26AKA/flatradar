@@ -42,8 +42,10 @@ export const HOUSE = {
   rotY: [[0, -0.35], [0.12, 0.2], [0.2, 0], [0.3, 0], [0.42, Math.PI], [0.52, Math.PI], [0.62, Math.PI + 0.7], [0.75, TAU - 0.4], [0.9, TAU], [1, TAU]] as [number, number][],
   // x position in world units (desktop: text on the left, house on the right)
   x: [[0, 2.4], [0.3, 2.4], [0.42, 2.6], [0.55, 2.6], [0.65, -4.2], [0.75, -4.2], [0.82, 5], [1, 5]] as [number, number][],
-  y: [[0, -0.2], [0.55, -0.2], [0.65, -1.9], [0.75, -1.9], [0.82, -0.9], [1, -0.9]] as [number, number][],
-  scale: [[0, 1], [0.2, 1.08], [0.3, 1.08], [0.42, 1.22], [0.52, 1.22], [0.62, 0.5], [0.75, 0.5], [0.82, 0.45], [0.9, 0.45], [0.95, 0], [1, 0]] as [number, number][],
+  // Pricing chapter (0.62–0.75): the house parks small and low under the text column. Low enough that its roof
+  // clears the body copy on short laptop windows (the copy is px-sized, the house is a fraction of the viewport).
+  y: [[0, -0.2], [0.55, -0.2], [0.65, -2.6], [0.75, -2.6], [0.82, -0.9], [1, -0.9]] as [number, number][],
+  scale: [[0, 1], [0.2, 1.08], [0.3, 1.08], [0.42, 1.22], [0.52, 1.22], [0.62, 0.42], [0.75, 0.42], [0.82, 0.45], [0.9, 0.45], [0.95, 0], [1, 0]] as [number, number][],
   crackGlow: [[0, 0], [0.4, 0], [0.45, 1], [0.53, 1], [0.58, 0], [1, 0]] as [number, number][],
 };
 
