@@ -23,7 +23,7 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import KFold
 
-from common import FEATURES, MODEL_DIR, feature_matrix, get_db, haversine_km, latlng, price_m2, trainable
+from common import FEATURES, MODEL_DIR, feature_fingerprint, feature_matrix, get_db, haversine_km, latlng, price_m2, trainable
 
 VERSION = "gbr-v1"
 SEED = 26
@@ -90,7 +90,10 @@ def summarize(name, pred, actual):
 def train_kind(kind, listings):
     rows = [l for l in listings if l.get("kind") == kind and trainable(l)]
     if len(rows) < 40:
-        print(f"[{kind}] only {len(rows)} usable listings, need >= 40; skipping")
+        stale = MODEL_DIR / f"{kind}.joblib"
+        if stale.exists():  # don't leave an old model behind for serve.py to load
+            stale.unlink()
+        print(f"[{kind}] only {len(rows)} usable listings, need >= 40; skipping (removed any old {kind}.joblib)")
         return None
     X_all = feature_matrix(rows)
     cols = [j for j in range(len(FEATURES)) if np.isfinite(X_all[:, j]).sum() >= 10]  # drop empty columns (e.g. fee_m2 for rent)
@@ -98,8 +101,10 @@ def train_kind(kind, listings):
     y_m2 = np.array([price_m2(l) for l in rows])
     y = np.log(y_m2)
     base = X_all[:, base_col(kind)]
-    calib = float(np.nanmedian(y - base))  # asking-price premium over realised prices, in log space
-    fallback_base = float(np.nanmedian(base))
+    has_base = np.isfinite(base).any()
+    # asking-price premium over realised prices, in log space (0 if no listing has a baseline, never NaN)
+    calib = float(np.nanmedian(y - base)) if has_base else 0.0
+    fallback_base = float(np.nanmedian(base)) if has_base else float(np.median(y))
     base_f = np.where(np.isnan(base), fallback_base, base)
 
     # Out-of-fold predictions for: absolute target vs residual-over-baseline target
@@ -170,7 +175,9 @@ def train_kind(kind, listings):
         "n_train": len(rows), "trained_at": datetime.now(timezone.utc).isoformat(),
         # Out-of-fold model estimate per training listing. The final model has seen these listings' prices,
         # so serve.py uses these instead for them (otherwise every backfilled listing would look "fair").
-        "oof_m2": {str(l.get("_id")): float(p) for l, p in zip(rows, model_pred)},
+        # Keyed by _id, with a fingerprint of the features so an edited listing is re-scored by the model.
+        "oof_m2": {str(l["_id"]): [float(p), feature_fingerprint(x)]
+                   for l, p, x in zip(rows, model_pred, X_all) if l.get("_id") is not None},
     }
     joblib.dump(artifact, MODEL_DIR / f"{kind}.joblib")
 

@@ -115,7 +115,12 @@ async function route(req, res) {
       db.collection('webhook_events').find().sort({ at: -1 }).limit(1).next(),
     ]);
     const counts = await db.collection('listings').aggregate([{ $group: { _id: '$kind', n: { $sum: 1 } } }]).toArray();
-    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size });
+    // Also pings the scorer: the keepalive hitting this route keeps a sleeping free scorer instance awake too.
+    const scorerUrl = process.env.SCORER_URL?.trim().replace(/\/$/, '');
+    const scorer = scorerUrl
+      ? await fetch(`${scorerUrl}/health`, { signal: AbortSignal.timeout(2500) }).then((r) => r.json()).catch((e) => ({ ok: false, error: e.name }))
+      : null;
+    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer });
   }
 
   if (p === '/api/listings' && req.method === 'GET') {

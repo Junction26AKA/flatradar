@@ -18,7 +18,8 @@ import joblib
 import numpy as np
 from fastapi import Body, FastAPI, HTTPException
 
-from common import FEATURES, MODEL_DIR, features, get_db, price_m2, rent_baseline, sale_baseline
+from common import (FEATURES, MODEL_DIR, feature_fingerprint, feature_matrix, get_db, price_m2, rent_baseline,
+                    sale_baseline)
 
 app = FastAPI(title="FlatRadar scorer")
 MODELS: dict = {}
@@ -30,7 +31,9 @@ def load_models():
         p = MODEL_DIR / f"{kind}.joblib"
         if p.exists():
             art = joblib.load(p)
-            assert art["features"] == FEATURES, f"{p.name} was trained on other features; retrain"
+            if art.get("features") != FEATURES:  # not an assert: those vanish under python -O
+                print(f"WARNING: {p.name} was trained on other features; ignoring it (retrain with train.py)")
+                continue
             MODELS[kind] = art
 
 
@@ -58,10 +61,12 @@ def model_estimate(listing, kind):
     art = MODELS.get(kind)
     if not art:
         return None
-    oof = art.get("oof_m2", {}).get(str(listing.get("_id")))
-    if oof is not None:  # listing was in the training set: use the estimate from the fold that didn't see it
-        return oof
-    x = np.array([[features(listing)[f] for f in FEATURES]], dtype=float)
+    x = feature_matrix([listing])
+    # Listing was in the training set and its features haven't changed since: use the estimate from the fold
+    # that didn't see its price (the final model has, so it would call every backfilled listing "fair").
+    oof = art.get("oof_m2", {}).get(str(listing["_id"])) if listing.get("_id") is not None else None
+    if oof is not None and oof[1] == feature_fingerprint(x[0]):
+        return oof[0]
     pred = float(art["model"].predict(x[:, art["cols"]])[0])
     if art["target"] == "residual":
         base = x[0, art["base_col"]]
@@ -69,8 +74,9 @@ def model_estimate(listing, kind):
     return math.exp(pred)
 
 
-def comparables(listing, radius=1000, max_n=12):
-    """Same query as lib/score/index.mjs so the UI's comps and the score agree."""
+def comparables(listing, radius=1000, max_n=12, wide=2.5):
+    """Same rules as lib/score/index.mjs so the UI's comps and the score agree: up to max_n within `radius`,
+    widened to radius x wide when fewer than 4 are that close. One $geoNear round trip, filtered here."""
     db = get_db()
     if db is None or not listing.get("loc") or not listing.get("m2"):
         return None
@@ -79,6 +85,8 @@ def comparables(listing, radius=1000, max_n=12):
         "_id": {"$ne": listing.get("_id")},
         "kind": kind,
         "comparable": True,
+        # Price-regulated sales aren't market prices (training drops them too, see common.trainable).
+        "tenure": {"$nin": ["hitas", "right_of_occupancy", "part_ownership"]},
         "portal": {"$ne": "mock"},  # demo flats must never become anyone's comparable
         "m2": {"$gte": m2 * 0.75, "$lte": m2 * 1.25},
         **({"debt_free_price": {"$gt": 0}} if kind == "sale" else {"rent": {"$gt": 0}}),
@@ -88,16 +96,13 @@ def comparables(listing, radius=1000, max_n=12):
     proj = {"url": 1, "address": 1, "m2": 1, "rooms": 1, "year": 1, "debt_free_price": 1, "price": 1, "rent": 1,
             "kind": 1, "distance_m": 1}
 
-    def run(r):
-        return list(db.listings.aggregate([
-            {"$geoNear": {"near": listing["loc"], "distanceField": "distance_m", "maxDistance": r,
-                          "query": query, "spherical": True}},
-            {"$limit": max_n}, {"$project": proj},
-        ], maxTimeMS=300))
-
-    used, docs = radius, run(radius)
-    if len(docs) < 4:
-        used, docs = radius * 2.5, run(radius * 2.5)
+    docs = list(db.listings.aggregate([
+        {"$geoNear": {"near": listing["loc"], "distanceField": "distance_m", "maxDistance": radius * wide,
+                      "query": query, "spherical": True}},
+        {"$limit": max_n}, {"$project": proj},
+    ], maxTimeMS=400))  # sorted by distance
+    close = [d for d in docs if d["distance_m"] <= radius]
+    used, docs = (radius, close) if len(close) >= 4 else (radius * wide, docs)
     items = [{"id": d["_id"], "url": d.get("url"), "address": d.get("address"), "m2": d.get("m2"),
               "rooms": d.get("rooms"), "year": d.get("year"), "price_m2": r2(price_m2(d)),
               "distance_m": round(d["distance_m"])} for d in docs if price_m2(d)]
@@ -149,11 +154,14 @@ def score(listing: dict = Body(...)):
     elif comps_m2:
         fair, method = comps_m2, "comps"
     elif baseline:
-        calib = math.exp(art["calib_log"]) if art else 1.0
+        calib_log = art.get("calib_log") if art else None
+        calib = math.exp(calib_log) if calib_log is not None and math.isfinite(calib_log) else 1.0
         fair, method = baseline["eur_m2"] * calib, "baseline"
     else:
         raise HTTPException(422, "not enough information to estimate a fair price")
 
+    if not (fair and math.isfinite(fair) and fair > 0):
+        raise HTTPException(422, "could not compute a finite fair price")
     deal = (ask - fair) / fair if ask else None
 
     # Confidence: do the independent estimates agree, is there enough local evidence, is the gap plausible?

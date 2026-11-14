@@ -9,6 +9,12 @@ curl -X POST localhost:8000/score -H 'content-type: application/json' --data-bin
 ```
 Set `SCORER_URL=http://localhost:8000` for the Node server to use it. Without it, Node falls back to comparables only.
 
+**Deploy (Render, second free web service, see `render.yaml` → `flatradar-scorer`):** build `pip install -r model/requirements.txt`,
+start `python -m uvicorn serve:app --app-dir model --host 0.0.0.0 --port $PORT`, health check `/health`,
+env `PYTHON_VERSION=3.12.16`, `MONGODB_URI`, `MONGODB_DB=flatradar`. Then set `SCORER_URL` on the Node service to its URL.
+The keepalive pings Node's `/api/health`, which pings the scorer, so both stay awake. After retraining, commit the
+`.joblib` files and `report.json`; Render redeploys the scorer from `main`.
+
 ## How a fair price is computed
 1. **Baseline.** The Statistics Finland realised €/m² for the postcode × room type (13mu, 2025; thin cells use an n-weighted mean of 2023–2025). For rent: average €/m² of new non-subsidised contracts by Helsinki rent zone 1–4 × rooms (15fa, latest quarter).
 2. **Model.** Gradient boosting (`HistGradientBoostingRegressor`), one per kind, predicting log(€/m²). `train.py` tries both an absolute target and a residual on top of the baseline and keeps whichever cross-validates better; currently that's absolute for both kinds. Listings the model was trained on are scored with their out-of-fold estimate, so backfilled listings aren't scored by a model that has already seen their price. Features are in `common.FEATURES`: both baselines, m², rooms, year, floor, top floor, elevator, sauna, balcony, building type, leased plot, fee/m², condition, distance to Senate Square, lat/lng.

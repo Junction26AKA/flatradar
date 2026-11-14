@@ -34,3 +34,25 @@ services:
         sync: false
       - key: SCORER_URL
         sync: false
+
+  # Kevin's fair-value model (model/serve.py). Node calls it via SCORER_URL and falls back to its own
+  # comparables score if it's slow (>3 s) or down. Kept awake by the Node /api/health route, which pings it.
+  - type: web
+    name: flatradar-scorer
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: pip install -r model/requirements.txt
+    startCommand: python -m uvicorn serve:app --app-dir model --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths: ["model/**"]
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.16"  # the committed .joblib models were trained and tested on this
+      - key: MONGODB_DB
+        value: flatradar
+      - key: MONGODB_URI
+        sync: false

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -135,6 +136,7 @@ def _sale_room_ratios() -> dict:
     return ratios
 
 
+@lru_cache(maxsize=8192)  # called several times per /score; callers must not mutate the returned dict
 def sale_baseline(postcode, rooms, building_type=None) -> dict | None:
     """Realised €/m² for old dwellings (Statistics Finland 13mu) for this postcode and room type."""
     b = load_baselines()["sale"]
@@ -161,6 +163,7 @@ def sale_baseline(postcode, rooms, building_type=None) -> dict | None:
     }
 
 
+@lru_cache(maxsize=8192)
 def rent_baseline(postcode, rooms) -> dict | None:
     """Average rent €/m²/month for new non-subsidised contracts (Statistics Finland 15fa), by Helsinki zone."""
     b = load_baselines()["rent"]
@@ -176,7 +179,8 @@ def rent_baseline(postcode, rooms) -> dict | None:
         "postcode": postcode,
         "area": ZONE_NAMES[area],
         "room_type": RENT_ROOM_TYPES[room],
-        "year": hit[0],
+        "year": int(str(hit[0])[:4]),  # contracts §2: an integer year, same as sale
+        "period": str(hit[0]),  # the quarter, e.g. "2025Q3"
         "eur_m2": round(float(hit[1]), 2),
     }
 
@@ -224,12 +228,15 @@ def _bool(x):
 
 CONDITION = {"uudenveroinen": 4, "uusi": 4, "erinomainen": 4, "hyvä": 3, "tyydyttävä": 2, "välttävä": 1,
              "huono": 0, "heikko": 0}
+# Match at a word start so inflected forms count ("hyvässä kunnossa"), but "uusi" only as a whole word:
+# "uusittu" / "uusitaan" (renovated / to be renovated) say nothing about the flat being new.
+_CONDITION_RE = {k: re.compile(rf"\b{k}\b" if k == "uusi" else rf"\b{k}") for k in CONDITION}
 
 
 def condition_score(text):
     """Free-text Finnish condition -> 0..4. 'Hyvä -/tyydyttävä +' -> 2.5; 'Hyvä, Uudenveroinen' -> 4; unknown -> NaN."""
     t = (text or "").lower()
-    hits = [v for k, v in CONDITION.items() if k in t]
+    hits = [v for k, v in CONDITION.items() if _CONDITION_RE[k].search(t)]
     if not hits:
         return np.nan
     if "uudenveroinen" in t:
@@ -291,6 +298,12 @@ def features(listing) -> dict:
 
 def feature_matrix(listings) -> np.ndarray:
     return np.array([[features(l)[f] for f in FEATURES] for l in listings], dtype=float)
+
+
+def feature_fingerprint(row) -> str:
+    """Identifies a feature row, so a stored out-of-fold estimate is only reused while the listing's features
+    are unchanged (NaN-safe, rounded so float noise doesn't matter)."""
+    return "|".join("nan" if not np.isfinite(v) else f"{v:.4f}" for v in row)
 
 
 def trainable(listing) -> bool:

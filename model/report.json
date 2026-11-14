@@ -1,6 +1,6 @@
 {
   "version": "gbr-v1",
-  "trained_at": "2026-11-14T03:44:02.063653+00:00",
+  "trained_at": "2026-11-14T03:56:52.465705+00:00",
   "method": "5-fold out-of-fold; error = |fair - asking| / asking on €/m²",
   "kinds": {
     "sale": {
