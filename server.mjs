@@ -15,7 +15,7 @@ import { hashPassword, verifyPassword, passwordProblem, startSession, endSession
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
-const PUBLIC_URL = process.env.PUBLIC_URL?.replace(/\/$/, '') || null;
+const PUBLIC_URL = process.env.PUBLIC_URL?.trim().replace(/\/$/, '') || null;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null;
 const WEB_DIR = path.resolve('web/dist');
 // Client-side routes: these paths get web/dist/index.html so deep links and reloads work.
