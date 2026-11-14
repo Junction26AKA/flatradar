@@ -279,7 +279,8 @@ server.listen(PORT, HOST, () => {
     setInterval(() => pollUnmonitored(), pollMin * 60 * 1000).unref();
   }
   // Price sweep over search pages 2…N (page 1 is the monitors' job). Deployed instance only, as it spends credits.
-  const sweepMin = Number(process.env.PRICE_SWEEP_MINUTES ?? 60);
+  // Off by default once per-listing monitors are on (LISTING_MONITOR_MAX > 0): they watch each listing page directly.
+  const sweepMin = Number(process.env.PRICE_SWEEP_MINUTES ?? (Number(process.env.LISTING_MONITOR_MAX ?? 0) > 0 ? 0 : 60));
   if (PUBLIC_URL && sweepMin > 0) {
     setTimeout(() => sweepPrices().catch((e) => log('price sweep failed', e.message)), 2 * 60 * 1000);
     setInterval(() => sweepPrices().catch((e) => log('price sweep failed', e.message)), sweepMin * 60 * 1000).unref();
