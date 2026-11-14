@@ -34,6 +34,7 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
   "price_history": [{ "at": "ISO date", "price": 329000, "debt_free_price": 329000, "rent": null }],
   "score": Score | null,              // §2, filled in by Kevin's /score
   "flags": [Flag],                    // §3, filled in by Adam's enrichment; grows as calls return
+  "insight": Insight | null,          // §3b, Gemini analyst; arrives a few seconds after status "ready"
   "status": "new" | "enriching" | "ready"
 }
 ```
@@ -72,9 +73,28 @@ The request body is a `listing` (with or without `score` and `flags`). The respo
   "est_cost_eur": 18000,       // nullable; this flat's estimated share
   "year": 2027,                // nullable
   "source": { "kind": "listing" | "pdf" | "news" | "open_data", "url": "…", "quote": "2027 Parvekkeet ja julkisivu…", "page": null },
+  "origin": "gemini",          // optional: present when the Gemini analyst found it (rules flags have no origin)
+  "label_fi": "Putkiremontti 2028", "detail_fi": "…",   // Gemini flags only: Finnish label and detail
   "status": "ok" | "pending" | "error"   // pending = call still running (show a spinner chip)
 }
 ```
+
+## 3b. `Insight` (Gemini analyst, `lib/insight.mjs`)
+Runs after the card is `ready`, so it never delays alerts. While it runs, `insight` is `{ "status": "pending", "run": "…", "at": "…" }`; if it fails, `{ "status": "error", "error": "…" }`. A re-enrichment sets it back to `null`. Each run's `run` token means only the newest run's result is written.
+```jsonc
+{
+  "status": "ok",
+  "headline": "Priced 17% above fair value with a major facade renovation ahead",   // ≤ 120 chars
+  "summary": "2–3 plain-English sentences: price vs fair value, then the biggest risk or upside.",
+  "questions": ["What will this flat's share of the 2028 facade renovation be?"],  // ≤ 3, to ask the agent
+  "fi": { "headline": "…", "summary": "…", "questions": ["…"] },   // the same texts in Finnish
+  "hidden_cost_eur": 23000,     // computed in code from finished cost flags (each kind of renovation once); null if none
+  "real_cost_eur": 308000,      // sale only: debt_free_price + hidden_cost_eur
+  "grounding": { "checked": 3, "kept": 1, "skipped": 1, "dropped": 1 },  // proposed / added as flags / already flagged or out of range / quote not found in a planned source
+  "sources": 3, "model": "gemini-3.8-flash", "tokens": 1260, "ms": 4100, "at": "ISO date"
+}
+```
+The model never produces a number. A hidden cost is kept only if its quote (≥ 12 characters) appears in a *planned*-renovations source (completed work is given to the model as context it can't cite). The kind of work, and so its € per m², comes from the regexes in `lib/flags/renovations.mjs` applied to that quote; no match means no cost. Totals are summed in code, with each kind of work counted once.
 
 ## 4. HTTP API (Adam, Node, same origin as the web app)
 | Method + path | Returns |
