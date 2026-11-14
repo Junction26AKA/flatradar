@@ -67,6 +67,13 @@ function FreehandDraw({ onDone }: { onDone: (points: [number, number][]) => void
       pts.push(p);
       setTrail(pts.map((q) => map.containerPointToLatLng(q)));
     };
+    // Interrupted by the browser or OS (system gesture, second finger): throw the partial shape away.
+    const cancel = () => {
+      if (!active) return;
+      active = false;
+      map.dragging.enable();
+      setTrail([]);
+    };
     const up = () => {
       if (!active) return;
       active = false;
@@ -81,12 +88,12 @@ function FreehandDraw({ onDone }: { onDone: (points: [number, number][]) => void
     el.addEventListener('pointerdown', down, true);
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
+    el.addEventListener('pointercancel', cancel);
     return () => {
       el.removeEventListener('pointerdown', down, true);
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
-      el.removeEventListener('pointercancel', up);
+      el.removeEventListener('pointercancel', cancel);
       map.dragging.enable();
     };
   }, [map]);

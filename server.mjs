@@ -14,7 +14,7 @@ import { alertForListing } from './lib/alerts/index.mjs';
 import { mediaEnabled, ownPublicId, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
 import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
 import { ensureListingMonitor } from './lib/listing-monitors.mjs';
-import { geocode, routeMinutes, routingEnabled, commuteKey, estimateMin, distanceM, backfillCommutes } from './lib/geo.mjs';
+import { geocode, ensureCommutes, routingEnabled, commuteKey, estimateMin, distanceM, backfillCommutes } from './lib/geo.mjs';
 import { parseSearch, EXCLUDABLE } from './lib/nlsearch.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
@@ -174,25 +174,24 @@ async function route(req, res) {
   }
 
   let m;
-  // Commute from one listing to a point: the cached HSL time, else ask the planner (and cache), else the estimate.
+  // Commute from one listing to one of the signed-in user's commute targets: the cached HSL time, else ask the
+  // planner (cached on the listing and pushed over SSE), else the estimate. Only the user's own saved targets, so
+  // callers can't make us plan (and store) arbitrary points.
   if ((m = p.match(/^\/api\/listings\/(.+)\/commute$/)) && req.method === 'GET') {
+    const me = await currentUser(req);
+    if (!me) return send(res, 401, { error: 'not signed in' });
     const lat = Number(url.searchParams.get('lat')), lng = Number(url.searchParams.get('lng'));
     if (!isLatLng(lat, lng)) return send(res, 400, { error: 'lat and lng required' });
-    const id = decodeURIComponent(m[1]);
-    const l = await db.collection('listings').findOne({ _id: id }, { projection: { loc: 1, commutes: 1 } });
+    const key = commuteKey(lat, lng);
+    const target = (me.searches ?? []).map((s) => s.commute).find((c) => c && commuteKey(c.lat, c.lng) === key);
+    if (!target) return send(res, 403, { error: 'not one of your commute places' });
+    const l = await db.collection('listings').findOne({ _id: decodeURIComponent(m[1]) }, { projection: { _id: 1, loc: 1, commutes: 1 } });
     const c = l?.loc?.coordinates;
     if (!c) return send(res, 404, { error: 'listing has no location' });
-    const key = commuteKey(lat, lng);
-    if (l.commutes?.[key]?.min != null) return send(res, 200, l.commutes[key]);
-    if (routingEnabled) {
-      const min = await routeMinutes({ lat: c[1], lng: c[0] }, { lat, lng }, { listingId: id }).catch(() => null);
-      if (min != null) {
-        const v = { min, src: 'hsl', at: new Date() };
-        await db.collection('listings').updateOne({ _id: id }, { $set: { [`commutes.${key}`]: v } });
-        return send(res, 200, v);
-      }
-    }
-    return send(res, 200, { min: estimateMin(distanceM(c[1], c[0], lat, lng)), src: 'estimate', at: new Date() });
+    const commutes = await ensureCommutes(l, [target]).catch(() => l.commutes ?? {});
+    const v = commutes[key];
+    if (v?.min != null) return send(res, 200, { ...v, routing: routingEnabled });
+    return send(res, 200, { min: estimateMin(distanceM(c[1], c[0], lat, lng)), src: 'estimate', routing: routingEnabled, at: new Date() });
   }
 
   // Share card (Cloudinary overlay URL): redirects, so <img src> and links keep working if the deal changes.
@@ -242,8 +241,9 @@ async function route(req, res) {
     return send(res, 200, { ...out, search: cleanSearch(out.search) });
   }
 
-  // Place search for commute targets (Digitransit, else OpenStreetMap).
+  // Place search for commute targets (Digitransit, else OpenStreetMap). Signed-in only; cached and throttled in lib/geo.
   if (p === '/api/geocode' && req.method === 'GET') {
+    if (!(await currentUser(req))) return send(res, 401, { error: 'not signed in' });
     const q = url.searchParams.get('q') ?? '';
     if (q.trim().length < 2) return send(res, 200, { items: [] });
     return send(res, 200, { items: await geocode(q).catch(() => []) });

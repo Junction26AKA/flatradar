@@ -41,6 +41,9 @@ export function PortalCompare({ listing: l }: { listing: Listing }) {
   );
 }
 
+/** Set once the server says it has no journey-planner key: from then on it could only echo our own estimate. */
+let serverCanRoute = true;
+
 /**
  * Commute times to the places in the user's saved searches (same kind). Shows the estimate at once, then asks the
  * server for the HSL journey-planner time (cached on the listing) and swaps it in.
@@ -61,11 +64,14 @@ export function CommutePanel({ listing: l }: { listing: Listing }) {
   const [fetched, setFetched] = useState<Record<string, CommuteTime>>({});
 
   useEffect(() => {
-    if (!l.loc || user?.offline) return;
+    if (!l.loc || user?.offline || !serverCanRoute) return;
     let live = true;
     for (const [k, c] of targets) {
-      if (l.commutes?.[k]?.min != null) continue;
-      getCommute(l._id, c.lat, c.lng).then((v) => { if (live) setFetched((f) => ({ ...f, [k]: v })); }).catch(() => {});
+      if (l.commutes?.[k]) continue; // planner time, or "no route" already checked
+      getCommute(l._id, c.lat, c.lng).then((v) => {
+        if (v.routing === false) serverCanRoute = false;
+        if (live && v.src === 'hsl') setFetched((f) => ({ ...f, [k]: v }));
+      }).catch(() => {});
     }
     return () => { live = false; };
   }, [l._id, !!l.loc, targets]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -76,7 +82,7 @@ export function CommutePanel({ listing: l }: { listing: Listing }) {
       <h3 id="dx-commute" className="t-eyebrow muted">{t('detail.commuteH')}</h3>
       <ul className="dx__commutes">
         {targets.map(([k, c]) => {
-          const v = l.commutes?.[k] ?? fetched[k] ?? commuteTime(l, c);
+          const v = commuteTime({ ...l, commutes: { ...fetched, ...l.commutes } }, c);
           if (!v) return null;
           const over = v.min > c.max_min;
           return (

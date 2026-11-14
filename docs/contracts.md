@@ -35,6 +35,7 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
   "first_seen_at": "ISO date", "last_seen_at": "ISO date",
   "removed_at": "ISO date" | null,  // set by the per-listing monitor (lib/listing-monitors) when the ad is gone
   "commutes": { "601688_249316": { "min": 23, "src": "hsl", "at": "ISO date" } },  // HSL planner times to saved-search
+                                    // targets; { "min": null, "src": "none" } = no route, re-checked after a day
                                     // commute targets, key = commuteKey(lat, lng) in lib/geo.mjs. Only with DIGITRANSIT_KEY
   "price_history": [{ "at": "ISO date", "price": 329000, "debt_free_price": 329000, "rent": null }],
   "score": Score | null,              // §2, filled in by Kevin's /score
@@ -137,8 +138,8 @@ The model never produces a number:
 | `POST /api/session` `{ email, password }` | `{ user }` and sets the session cookie, or `401 { error }` |
 | `DELETE /api/session` | `{ ok: true }` and clears the cookie |
 | `POST /api/search/parse` `{ text }` | `{ search, summary, notes: [string], via: "gemini" \| "rules" }`: a draft search from free text, not saved (signed in only) |
-| `GET /api/geocode?q=` | `{ items: [{ label, lat, lng }] }` in the Helsinki region (Digitransit, else OpenStreetMap) |
-| `GET /api/listings/:id/commute?lat=&lng=` | `{ min, src: "hsl" \| "estimate", at }`: cached HSL time, else asks the planner (and caches), else the estimate |
+| `GET /api/geocode?q=` | `{ items: [{ label, lat, lng }] }` in the Helsinki region (Digitransit, else OpenStreetMap at ≤ 1 request/s; cached a day). Signed in only |
+| `GET /api/listings/:id/commute?lat=&lng=` | `{ min, src: "hsl" \| "estimate", routing, at }`: cached HSL time, else asks the planner (caches it and sends `listing.updated`), else the estimate. Signed in only, and only for a commute target in one of your saved searches (`403` otherwise). `routing: false` = no planner key on the server |
 | `POST /mock/publish` `{ preset?: "kallio-2h", photos?: ["https://res.cloudinary.com/…"] }` | `{ listing_id }` and starts the demo flow. `/mock` has a Cloudinary Upload Widget panel that calls this with photos |
 | `GET /api/listings/:id/card` | `302` to a 1200×630 Cloudinary share card (photo + deal band), `404` if no photos. Also used in the alert email |
 | `POST /admin/photos` `{ id }` or `{ limit }` | `202 { started: [ids] }`: re-runs the Cloudinary photo pass |
@@ -147,7 +148,7 @@ The model never produces a number:
 
 **Search places:** `postcodes`, `areas` (map circles, radius 200 m – 20 km, ≤ 5) and `polygons` (drawn freehand, 3–100 points, ≤ 3) are alternatives: with any set, a listing must be in one postcode OR inside one circle OR inside one polygon (`inPlaces` in `lib/alerts` and `web/src/lib/match.ts`). Listings without `loc` never match a circle or polygon. The server cleans searches on save (`cleanSearch` in `server.mjs`).
 
-**Commute:** `commute.max_min` (5–120) is the most minutes by public transport, leaving 08:00 on a weekday. The time is the listing's cached `commutes.<key>` (HSL journey planner), else `8 + 2.6 × straight-line km` (same formula in `lib/geo.mjs` and `web/src/lib/match.ts`). Alerts fetch planner times before matching; saving a commute search backfills the newest 300 listings of that kind in the background. Both need `DIGITRANSIT_KEY`; without it everything uses the estimate.
+**Commute:** `commute.max_min` (5–120) is the most minutes by public transport, leaving 08:00 on a weekday. The time is the listing's cached `commutes.<key>` (HSL journey planner), else `8 + 2.6 × straight-line km` (same formula in `lib/geo.mjs` and `web/src/lib/match.ts`). Alerts fetch planner times before matching; saving a commute search backfills the newest 300 listings of that kind in the background (once per target per 10 minutes). Both need `DIGITRANSIT_KEY`; without it everything uses the estimate.
 
 **Hidden-cost exclusions:** `exclude_flags` drops a listing with any finished (`status: ok`), non-`info` flag of those types. Allowed: `pipe_renovation`, `facade_balcony`, `renovation_upcoming`, `company_loan`, `leased_plot`, `high_fee`, `street_works`.
 

@@ -214,10 +214,13 @@ export interface CommuteTarget {
 }
 
 export interface CommuteTime {
-  min: number;
-  /** hsl = HSL journey planner, estimate = from straight-line distance */
-  src: 'hsl' | 'estimate';
+  /** null = the planner found no route (stored so it isn't asked again for a day) */
+  min: number | null;
+  /** hsl = HSL journey planner, estimate = from straight-line distance, none = no route found */
+  src: 'hsl' | 'estimate' | 'none';
   at?: string;
+  /** set by GET /api/listings/:id/commute: false = the server has no planner key, so it can only estimate */
+  routing?: boolean;
 }
 
 export interface SavedSearch {

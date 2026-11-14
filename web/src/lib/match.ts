@@ -1,5 +1,12 @@
 import { askingPrice } from './format';
-import type { CommuteTarget, CommuteTime, Listing, SavedSearch, SearchArea } from './types';
+import type { CommuteTarget, CommuteTime, FlagType, Kind, Listing, SavedSearch, SearchArea } from './types';
+
+/** Hidden-cost flags a search can rule out. Mirrors EXCLUDABLE in lib/nlsearch.mjs: change both together. */
+export const EXCLUDABLE: FlagType[] = ['pipe_renovation', 'facade_balcony', 'renovation_upcoming', 'company_loan', 'leased_plot', 'high_fee', 'street_works'];
+/** Housing-company flags that only exist on flats for sale. */
+const SALE_ONLY_FLAGS: FlagType[] = ['company_loan', 'leased_plot', 'high_fee'];
+/** The flags a search of this kind can exclude. */
+export const excludableFor = (kind: Kind) => EXCLUDABLE.filter((f) => kind === 'sale' || !SALE_ONLY_FLAGS.includes(f));
 
 /** Mirrors the alert matcher's intent: same kind, under max price, enough rooms, in the postcodes, deal good enough. */
 export function matchesSearch(l: Listing, s: SavedSearch): boolean {
@@ -58,9 +65,9 @@ export const commuteKey = (lat: number, lng: number) => `${Math.round(lat * 1e4)
 export const estimateMin = (meters: number) => Math.round(8 + 2.6 * (meters / 1000));
 
 /** HSL planner time if the server has fetched one, else the straight-line estimate. null = listing has no location. */
-export function commuteTime(l: Listing, t: Pick<CommuteTarget, 'lat' | 'lng'>): CommuteTime | null {
+export function commuteTime(l: Listing, t: Pick<CommuteTarget, 'lat' | 'lng'>): (CommuteTime & { min: number }) | null {
   const hit = l.commutes?.[commuteKey(t.lat, t.lng)];
-  if (hit?.min != null) return hit;
+  if (hit?.min != null) return { ...hit, min: hit.min };
   const c = l.loc?.coordinates;
   return c ? { min: estimateMin(distanceM(c[1], c[0], t.lat, t.lng)), src: 'estimate' } : null;
 }

@@ -6,7 +6,7 @@ import { ago, agoShort, eur, factsLine, perM2, pricePerM2, priceLabel, shortAddr
 import { useI18n } from '../lib/i18n';
 import type { PriceChange } from '../lib/store';
 import type { Listing } from '../lib/types';
-import { cheaperElsewhere, portalName } from '../lib/portals';
+import { cheaperElsewhere, portalName, portalPrices } from '../lib/portals';
 import { DealBadge, PriceChangeBadge } from './DealBadge';
 import { FlagChip, sortFlags } from './FlagChip';
 import './ListingCard.css';
@@ -38,7 +38,7 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
   const good = score != null && score.deal_pct <= -0.03;
   const cover = compact ? null : coverPhoto(l);
   const gone = !!l.removed_at;
-  const portals = 1 + Object.keys(l.also_on ?? {}).filter((p) => p !== l.portal).length;
+  const portals = portalPrices(l).length;
   const cheaper = portals > 1 ? cheaperElsewhere(l) : null;
 
   return (

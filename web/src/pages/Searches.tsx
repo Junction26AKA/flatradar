@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth';
 import { useI18n, type T } from '../lib/i18n';
 import { errorMessage, isMessageKey, type MessageKey } from '../lib/messages';
 import { ago, eur, shortAddress } from '../lib/format';
-import { matchesSearch } from '../lib/match';
+import { excludableFor, matchesSearch } from '../lib/match';
 import { useFeed } from '../lib/store';
 import { geocodePlace, parseSearchText, type ParsedSearch, type Place } from '../lib/api';
 import type { CommuteTarget, FlagType, Kind, SavedSearch, SearchArea, SearchPolygon } from '../lib/types';
@@ -25,8 +25,6 @@ const dealOptions = (t: T): { value: string; label: string }[] => [
 
 const EMPTY: SavedSearch = { kind: 'sale', max_price: null, min_rooms: null, postcodes: [], areas: [], polygons: [], commute: null, exclude_flags: [], min_deal: -0.1 };
 
-/** Hidden-cost flags a search can rule out (same list as EXCLUDABLE in lib/nlsearch.mjs). */
-const EXCLUDABLE: FlagType[] = ['pipe_renovation', 'facade_balcony', 'renovation_upcoming', 'company_loan', 'leased_plot', 'high_fee', 'street_works'];
 const COMMUTE_MINUTES = [15, 20, 30, 45, 60];
 
 /** "Buy · 2+ rooms · up to €300,000" */
@@ -206,12 +204,17 @@ function SearchForm({ initial, heading, note, busy, onSave, onCancel }: {
       areas,
       polygons,
       commute,
-      exclude_flags: EXCLUDABLE.filter((f) => excluded.has(f) && (kind === 'sale' || !['company_loan', 'leased_plot', 'high_fee'].includes(f))),
+      exclude_flags: excludableFor(kind).filter((f) => excluded.has(f)),
       min_deal: deal === 'any' ? null : -Number(deal) / 100,
     });
   }
 
   const dealDefault = initial.min_deal == null ? 'any' : String(Math.round(Math.abs(initial.min_deal) * 100));
+  // A typed search can ask for any percentage ("8% below"): offer it, or the select falls back to "any" and the
+  // deal filter is silently dropped on save.
+  const deals = dealOptions(t);
+  if (!deals.some((o) => o.value === dealDefault)) deals.push({ value: dealDefault, label: t('sr.optPct', { p: Number(dealDefault) }) });
+  deals.sort((a, b) => (a.value === 'any' ? -1 : b.value === 'any' ? 1 : Number(a.value) - Number(b.value)));
   return (
     <form className="scard scard--form" onSubmit={submit}>
       <h2 className="t-h3">{heading}</h2>
@@ -251,7 +254,7 @@ function SearchForm({ initial, heading, note, busy, onSave, onCancel }: {
       <fieldset className="sform__ex">
         <legend className="sform__label">{t('sr.skipFlats')}</legend>
         <div className="sform__exlist">
-          {EXCLUDABLE.filter((f) => kind === 'sale' || !['company_loan', 'leased_plot', 'high_fee'].includes(f)).map((f) => (
+          {excludableFor(kind).map((f) => (
             <label key={f} className="sform__check">
               <input type="checkbox" checked={excluded.has(f)} onChange={() => toggleEx(f)} />
               <span>{t(`ex.${f}` as MessageKey)}</span>
@@ -262,7 +265,7 @@ function SearchForm({ initial, heading, note, busy, onSave, onCancel }: {
       <label>
         {t('sr.emailMe')}
         <select name="min_deal" defaultValue={dealDefault}>
-          {dealOptions(t).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {deals.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </label>
       <div className="scard__actions">
@@ -364,7 +367,7 @@ function CommutePicker({ value, onChange }: { value: CommuteTarget | null; onCha
             <ul className="commute__hits">
               {hits.map((h) => (
                 <li key={`${h.lat},${h.lng}`}>
-                  <button type="button" className="btn btn--link" onClick={() => { onChange({ label: q.trim() || h.label, lat: +h.lat.toFixed(5), lng: +h.lng.toFixed(5), max_min: 30 }); setHits(null); setQ(''); }}>
+                  <button type="button" className="btn btn--link" onClick={() => { onChange({ label: h.label.split(',')[0].trim() || q.trim(), lat: +h.lat.toFixed(5), lng: +h.lng.toFixed(5), max_min: 30 }); setHits(null); setQ(''); }}>
                     {h.label}
                   </button>
                 </li>
