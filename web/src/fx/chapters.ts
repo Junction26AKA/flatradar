@@ -83,4 +83,14 @@ export const OVERLAY = {
   ctaText: [0.915, 0.935] as [number, number],
 };
 
+/**
+ * Where the nav links land: the point where that chapter's visuals have settled (not its first frame, where the
+ * house, camera and overlays are still mid-transition). Checked against HOUSE/CAMERA/MINI/OVERLAY above.
+ */
+export const ANCHOR: Record<'price' | 'pricing' | 'live', number> = {
+  price: 0.22, // tag fully swung in (OVERLAY.tag.in ends at 0.2), before it shatters at 0.255
+  pricing: 0.71, // towers mostly built (0.58–0.74), panel not yet fading (fade-out starts ≈0.718)
+  live: 0.86, // camera fully top-down and mini map up (0.84–0.9)
+};
+
 export const chapterAt = (p: number) => CHAPTERS.find((c) => p >= c.from && p < c.to) ?? CHAPTERS[CHAPTERS.length - 1];

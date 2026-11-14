@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform, useVelocity, type MotionValue } from 'motion/react';
 import { Coin } from '../components/Coin';
 import { DealBadge } from '../components/DealBadge';
@@ -7,7 +8,7 @@ import { FlagChip, sortFlags } from '../components/FlagChip';
 import { ListingCard } from '../components/ListingCard';
 import { Logo } from '../components/Logo';
 import { LiveDot } from '../components/LiveDot';
-import { CHAPTERS, COINS, OVERLAY, chapterAt, ramp, type Chapter } from '../fx/chapters';
+import { ANCHOR, CHAPTERS, COINS, OVERLAY, chapterAt, ramp, type Chapter } from '../fx/chapters';
 import { CoinRain, coinBurst, pourTarget } from '../fx/CoinRain';
 import { House2D } from '../fx/House2D';
 import { Odometer } from '../fx/Odometer';
@@ -68,7 +69,9 @@ export default function Landing() {
     return () => { el.style.overscrollBehaviorY = prev; };
   }, []);
 
-  const jump = (id: string) => scrollToProgress(root.current, (CHAPTERS.find((c) => c.id === id)!.from) + 0.04);
+  const jump = (id: keyof typeof ANCHOR) => scrollToProgress(root.current, ANCHOR[id]);
+  const { status } = useAuth();
+  const signedIn = status === 'signed-in';
 
   return (
     <div className={`lp lp--${active.ink}`}>
@@ -83,7 +86,8 @@ export default function Landing() {
           <button onClick={() => jump('pricing')}>Pricing model</button>
           <button onClick={() => jump('live')}>Live map</button>
         </div>
-        <CtaButton className="lp__navcta">Start saving →</CtaButton>
+        {!signedIn && <Link to="/signin?mode=in" className="lp__signin t-label">Sign in</Link>}
+        <CtaButton className="lp__navcta">{signedIn ? 'Open FlatRadar →' : 'Start saving →'}</CtaButton>
       </nav>
 
       <div ref={root} className="lp__story" style={{ height: `${STORY_VH}vh` }}>
@@ -108,7 +112,7 @@ export default function Landing() {
 
           <CoinRain progress={scrollYProgress} velocity={velocity} lite={env.narrow} still={env.reduced} />
 
-          <Panels progress={scrollYProgress} active={active.id} data={data} />
+          <Panels progress={scrollYProgress} active={active.id} data={data} onHow={() => jump('price')} />
         </div>
       </div>
     </div>
@@ -142,7 +146,7 @@ function Panel({ chapter, progress, active, className = '', children }: { chapte
   );
 }
 
-function Panels({ progress, active, data }: { progress: MotionValue<number>; active: string; data: LandingData }) {
+function Panels({ progress, active, data, onHow }: { progress: MotionValue<number>; active: string; data: LandingData; onHow: () => void }) {
   const now = useNow();
   return (
     <>
@@ -161,7 +165,7 @@ function Panels({ progress, active, data }: { progress: MotionValue<number>; act
         </div>
         <div className="lp__ctas">
           <CtaButton>Start saving →</CtaButton>
-          <a className="lp__ghost" href="#how" onClick={(e) => { e.preventDefault(); window.scrollBy({ top: window.innerHeight * 1.2, behavior: 'smooth' }); }}>See how it works</a>
+          <a className="lp__ghost" href="#how" onClick={(e) => { e.preventDefault(); onHow(); }}>See how it works</a>
         </div>
         <p className="t-num-s lp__hint" aria-hidden="true">scroll ↓ to watch the money</p>
       </Panel>
@@ -213,13 +217,15 @@ function Panels({ progress, active, data }: { progress: MotionValue<number>; act
 /** Gold CTA: coin burst from the button, then go to sign-up. */
 function CtaButton({ children, className = '', variant = 'gold' }: { children: ReactNode; className?: string; variant?: 'gold' | 'primary' }) {
   const nav = useNavigate();
+  const { status } = useAuth();
+  const to = status === 'signed-in' ? '/app' : '/signin';
   return (
     <button
       className={`lp__cta lp__cta--${variant} t-label ${className}`}
       onClick={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         coinBurst(r.left + r.width / 2, r.top + r.height / 2, 24);
-        setTimeout(() => nav('/signin'), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 380);
+        setTimeout(() => nav(to), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 380);
       }}
     >
       {children}

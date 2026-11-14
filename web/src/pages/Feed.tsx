@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { Coin } from '../components/Coin';
 import { ListingCard } from '../components/ListingCard';
 import { useAuth } from '../lib/auth';
@@ -24,7 +24,9 @@ export default function Feed() {
   const all = useListings(kind);
   const { source, loading, fresh, priceChanges } = useFeed();
   const now = useNow();
-  const [filters, setFilters] = useState<Set<Filter>>(new Set());
+  const [params] = useSearchParams();
+  // ?match=1 (from My searches → "See matches") starts with the "Matches my search" filter on.
+  const [filters, setFilters] = useState<Set<Filter>>(() => new Set(params.get('match') ? ['match'] : []));
   const [limit, setLimit] = useState(PAGE);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false); // mobile only
