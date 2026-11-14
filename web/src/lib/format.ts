@@ -88,6 +88,6 @@ export function roomsText(l: Listing): string | null {
 }
 
 export const factsLine = (l: Listing) =>
-  [roomsText(l), l.m2 ? m2(l.m2) : null, l.year, l.floor != null && l.floors_total ? `${l.floor}/${l.floors_total}` : null]
+  [roomsText(l), l.m2 ? m2(l.m2) : null, l.year, l.floor != null ? msg('unit.floor', { n: l.floor, of: l.floors_total }) : null]
     .filter(Boolean)
     .join(' · ');

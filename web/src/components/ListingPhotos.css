@@ -42,10 +42,6 @@
 .photos__flag { padding: 0; border: 0; background: none; cursor: pointer; border-radius: var(--radius-full); }
 .photos__flag:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
 
-.photos__share { display: grid; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--border); }
-.photos__card { width: 100%; max-width: 600px; height: auto; border-radius: var(--radius-sm); box-shadow: var(--shadow-card); }
-.photos__shareBtns { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.photos__shareBtns .btn { justify-self: auto; text-decoration: none; }
 
 /* Before/after slider: the "after" image sits on top, clipped from the left by the slider position. */
 .ba { position: relative; width: 100%; max-height: 70vh; background: var(--bg-subtle); user-select: none; }

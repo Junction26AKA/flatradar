@@ -6,9 +6,13 @@
 }
 .feed--detail { grid-template-columns: minmax(340px, 420px) minmax(0, 1fr) minmax(360px, 432px); }
 
-.feed__list { overflow-y: auto; overscroll-behavior: contain; padding: 2px 6px var(--space-8) 2px; margin: -2px -6px 0 -2px; scrollbar-width: thin; }
-/* top: -2px covers .feed__list's 2px top padding, or scrolled cards peek through above the header. */
-.feed__head { position: sticky; top: -2px; z-index: 2; display: grid; gap: var(--space-3); padding-bottom: var(--space-4); background: var(--bg-page); }
+.feed__list { overflow-y: auto; overscroll-behavior: contain; padding: 2px 6px var(--space-8) 2px; margin: -2px -6px 0 -2px; scrollbar-width: none; }
+/* No visible scrollbar: it sat in the list's 6px gutter, outside the card column. Wheel, trackpad and keys still scroll. */
+.feed__list::-webkit-scrollbar { display: none; }
+/* top: -2px covers .feed__list's 2px top padding, or scrolled cards peek through above the header; the negative inline
+   margins cover its side padding too, so no card edge or shadow shows beside the header. z-index sits above the
+   cards' hearts and match tags (z-index 2). */
+.feed__head { position: sticky; top: -2px; z-index: 4; margin: 0 -6px 0 -2px; padding-inline: 2px 6px; display: grid; gap: var(--space-3); padding-bottom: var(--space-4); background: var(--bg-page); }
 .feed__head h1 { display: flex; align-items: baseline; gap: 10px; }
 .feed__filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .feed__maptoggle { display: none; }
@@ -62,10 +66,10 @@
   .feed, .feed--detail { display: flex; flex-direction: column; height: auto; }
   .feed__map { order: -1; } /* map (when toggled on) sits above the list, not after 150 cards */
   .feed__list { overflow: visible; margin: 0; padding: 0 0 var(--space-8); }
-  .feed__head { top: 0; }
+  .feed__head { top: 0; margin: 0; padding-inline: 0; }
   .feed__maptoggle { display: inline-block; }
   .feed__map { display: none; height: 60dvh; margin-bottom: var(--space-4); }
-  .feed--map-open .feed__map { display: block; position: sticky; top: 0; z-index: 3; }
+  .feed--map-open .feed__map { display: block; position: sticky; top: 0; z-index: 5; }
   .feed__detail {
     position: fixed; inset: auto 0 0 0; top: auto; width: auto; max-height: 82dvh; z-index: 1000;
     border-radius: 20px 20px 0 0; animation: sheet-in 0.35s var(--ease-out);
@@ -74,3 +78,20 @@
 }
 
 .detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* Drawer header: the display face for the address only, Inter for everything under it. */
+.detail-scaffold { display: grid; gap: var(--space-3); margin-bottom: var(--space-6); }
+.detail-scaffold > p { margin: 0; }
+.detail-scaffold .lcard__flags { margin-top: 0; }
+.detail-scaffold > .detail-facts { margin-top: calc(-1 * var(--space-2)); } /* facts sit with the address */
+.detail-title { padding-right: 40px; /* clear of the close button */ }
+.detail-facts { font: 400 14px/20px var(--font-body); }
+.detail-fair { font: 400 14px/20px var(--font-body); }
+.detail-fair strong { font-weight: 600; }
+/* "View on Etuovi ↗": the same pill as the labelled Save button next to it. */
+.detail-link {
+  display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: var(--radius-full);
+  border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font: 600 13px/1 var(--font-body);
+}
+.detail-link:hover { border-color: var(--border-brand); }
+.detail-link:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }

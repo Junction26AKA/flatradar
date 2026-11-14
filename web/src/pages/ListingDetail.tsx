@@ -35,21 +35,24 @@ export default function ListingDetail() {
   return (
     <>
     <div className="detail-scaffold">
-      <h2 className="t-h3">{l.address}</h2>
-      <p className="t-body-s muted">{factsLine(l)}</p>
+      <h2 className="t-h3 detail-title">{l.address}</h2>
+      <p className="detail-facts muted">{factsLine(l)}</p>
       {l.removed_at && (
         <p className="t-body-s"><span className="sold t-label">{t(l.kind === 'rent' ? 'card.let' : 'card.sold')}</span> {t('card.soldTitle', { ago: ago(l.removed_at) })}</p>
       )}
       <div className="detail-actions">
         <FavButton id={l._id} variant="labelled" />
         {l.url && PORTAL_NAMES[l.portal] && (
-          <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
+          <a className="detail-link" href={l.url} target="_blank" rel="noreferrer">
             {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
           </a>
         )}
       </div>
       {l.score && (
-        <p className="t-num-m">{t('detail.fair', { price: eur(l.score.fair_price), pct: Math.round(l.score.deal_pct * 1000) / 10 })}</p>
+        <p className="detail-fair">
+          {t('detail.fairLabel')} <strong>{eur(l.score.fair_price)}</strong>
+          <span className="muted"> · {t('detail.fairVs', { pct: Math.round(l.score.deal_pct * 1000) / 10 })}</span>
+        </p>
       )}
       {l.flags.length > 0 && <div className="lcard__flags">{sortFlags(l.flags).map((f) => <FlagChip key={f.id + f.status} flag={f} />)}</div>}
     </div>
