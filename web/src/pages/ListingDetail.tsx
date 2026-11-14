@@ -8,6 +8,9 @@ import { useI18n } from '../lib/i18n';
 import { useFeed } from '../lib/store';
 import type { ListingDetail as Detail } from '../lib/types';
 
+/** Display names for the "View on …" link; mock listings have no real ad, so they get no link. */
+const PORTAL_NAMES: Record<string, string | undefined> = { etuovi: 'Etuovi', vuokraovi: 'Vuokraovi', oikotie: 'Oikotie' };
+
 /** Step-1 scaffold for /app/l/:id. Step 5 turns this into the drawer (score breakdown, comps, flags, map, fan-out). */
 export default function ListingDetail() {
   const { id = '' } = useParams();
@@ -32,6 +35,11 @@ export default function ListingDetail() {
       <p className="t-eyebrow muted">{l._id}</p>
       <h2 className="t-h3">{l.address}</h2>
       <p className="t-body-s muted">{factsLine(l)}</p>
+      {l.url && PORTAL_NAMES[l.portal] && (
+        <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
+          {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
+        </a>
+      )}
       <p className="t-num-m">
         {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)} · ${t(`confidence.${l.score.confidence}`)}`}
       </p>
