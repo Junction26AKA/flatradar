@@ -83,7 +83,9 @@ function FitOnce({ points }: { points: [number, number][] }) {
   latest.current = points;
   const fit = () => {
     if (done.current || !latest.current.length || !visible(map)) return;
-    map.fitBounds(L.latLngBounds(latest.current), { padding: [40, 40], maxZoom: 13 });
+    // Whole zoom level (zoomSnap is 0 for the trackpad, see below), so the first view's tiles are crisp.
+    const b = L.latLngBounds(latest.current);
+    map.setView(b.getCenter(), Math.min(13, Math.floor(map.getBoundsZoom(b, false, L.point(80, 80)))), { animate: false });
     done.current = true;
   };
   const map = useVisibleSize(fit);
@@ -96,7 +98,20 @@ export default function ListingMap({ listings, selectedId, hoverId, freshIds = {
   const selected = placed.find((x) => x.l._id === selectedId);
 
   return (
-    <MapContainer center={HELSINKI} zoom={12} className="lmap" zoomControl={false} attributionControl preferCanvas={false}>
+    <MapContainer
+      center={HELSINKI}
+      zoom={12}
+      className="lmap"
+      zoomControl={false}
+      attributionControl
+      preferCanvas={false}
+      // Mac trackpads send a stream of tiny wheel events. With the default zoomSnap of 1, Leaflet rounds every
+      // 40 ms batch UP to a whole level, so a gentle two-finger scroll flew from city to world view (12 → 0).
+      // Unsnapped instead. Leaflet also divides Mac wheel deltas by 3×DPR, so the per-level distance has to be much
+      // smaller than its default 60. Measured in WebKit + Chromium (DPR 2): a gentle 250 px swipe ≈ 0.7–0.9 levels.
+      zoomSnap={0}
+      wheelPxPerZoomLevel={10}
+    >
       {/* Standard OSM tiles (no key). ListingMap.css tints them toward the Finnish-blue palette. */}
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
