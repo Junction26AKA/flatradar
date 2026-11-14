@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useI18n, type T } from '../lib/i18n';
@@ -88,7 +88,27 @@ export default function Searches() {
         </button>
       </header>
 
-      {error && <p className="srch__error" role="alert">{isMessageKey(error) ? t(error) : error}</p>}
+      {error && editing === null && <p className="srch__error" role="alert">{isMessageKey(error) ? t(error) : error}</p>}
+
+      {editing !== null && (
+        <SearchDialog onCancel={editing === 'new' && !searches.length && !draft ? undefined : () => { setEditing(editing === 'new' && !searches.length ? 'new' : null); setDraft(null); setError(null); }}>
+          {error && <p className="srch__error" role="alert">{isMessageKey(error) ? t(error) : error}</p>}
+          {editing === 'new' ? (
+            <SearchForm
+              key={`new${draft?.key ?? 0}`}
+              initial={draft ? { ...EMPTY, ...draft.parsed.search } : EMPTY}
+              busy={busy}
+              heading={draft ? t('sr.fromText') : searches.length ? t('sr.new') : t('sr.first')}
+              note={draft ? <ParsedNote parsed={draft.parsed} /> : null}
+              onCancel={searches.length || draft ? () => { setEditing(searches.length ? null : 'new'); setDraft(null); setError(null); } : undefined}
+              // newest search goes first (top-left of the grid)
+              onSave={(s) => void save([s, ...searches]).then((ok) => { if (ok) setDraft(null); })}
+            />
+          ) : (
+            <SearchForm key={editing} initial={searches[editing]} busy={busy} heading={t('sr.edit')} onCancel={() => { setEditing(null); setError(null); }} onSave={(n) => save(searches.map((x, j) => (j === editing ? n : x)))} />
+          )}
+        </SearchDialog>
+      )}
 
       {!full && typeof editing !== 'number' && (
         <DescribeSearch
@@ -97,21 +117,7 @@ export default function Searches() {
       )}
 
       <div className="srch__grid">
-        {editing === 'new' && (
-          <SearchForm
-            key={`new${draft?.key ?? 0}`}
-            initial={draft ? { ...EMPTY, ...draft.parsed.search } : EMPTY}
-            busy={busy}
-            heading={draft ? t('sr.fromText') : searches.length ? t('sr.new') : t('sr.first')}
-            note={draft ? <ParsedNote parsed={draft.parsed} /> : null}
-            onCancel={searches.length || draft ? () => { setEditing(searches.length ? null : 'new'); setDraft(null); } : undefined}
-            onSave={(s) => void save([...searches, s]).then((ok) => { if (ok) setDraft(null); })}
-          />
-        )}
-        {searches.map((s, i) =>
-          editing === i ? (
-            <SearchForm key={i} initial={s} busy={busy} heading={t('sr.edit')} onCancel={() => setEditing(null)} onSave={(n) => save(searches.map((x, j) => (j === i ? n : x)))} />
-          ) : (
+        {searches.map((s, i) => (
             <article key={i} className="scard">
               <p className="t-eyebrow scard__kind">{t(s.kind === 'rent' ? 'kind.forRent' : 'kind.forSale')}</p>
               <h2 className="t-h3">{title(s, t)}</h2>
@@ -143,8 +149,7 @@ export default function Searches() {
                 </button>
               </div>
             </article>
-          ),
-        )}
+        ))}
       </div>
 
       {full && <p className="t-body-s muted">{t('sr.full', { n: MAX_SEARCHES })}</p>}
@@ -168,6 +173,26 @@ export default function Searches() {
         )}
       </section>
     </div>
+  );
+}
+
+/** Native modal <dialog>: Esc / backdrop click cancel (unless cancelling isn't allowed). */
+function SearchDialog({ onCancel, children }: { onCancel?: () => void; children: ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+    return () => d?.close();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="sdialog"
+      onCancel={(e) => { e.preventDefault(); onCancel?.(); }}
+      onClick={(e) => { if (e.target === ref.current) onCancel?.(); }}
+    >
+      {children}
+    </dialog>
   );
 }
 
