@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { large, mediaPhotos, renovated, RENOVATION_PROMPTS, shareCardPath, thumb } from '../lib/cloudinary';
+import { canRenovate as renovatable, large, mediaPhotos, renovated, shareCardPath, thumb } from '../lib/cloudinary';
 import { flagLabel } from '../lib/flagText';
 import { eur } from '../lib/format';
 import { useI18n } from '../lib/i18n';
@@ -45,7 +45,7 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
   const cloud = media.cloud;
   const i = Math.min(sel, photos.length - 1);
   const p = photos[i];
-  const canRenovate = !!RENOVATION_PROMPTS[p.room];
+  const canRenovate = renovatable(p);
   // The photo flag for this room, if any, gives the rough cost shown under the preview.
   const roomFlag = photoFlags.find((f) => f.photo === i && f.est_cost_eur);
 

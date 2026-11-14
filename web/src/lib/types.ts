@@ -77,7 +77,8 @@ export type Insight =
     };
 
 /** Room type from AI Vision; picks the "after renovation" preview prompt. */
-export type PhotoRoom = 'kitchen' | 'bathroom' | 'exterior' | 'plan' | 'room';
+/** 'room' = an interior living space; 'other' = documents, details, or not classified. */
+export type PhotoRoom = 'kitchen' | 'bathroom' | 'exterior' | 'plan' | 'room' | 'other';
 
 export interface MediaPhoto {
   /** Cloudinary public id in the `cloud` below. */
@@ -88,6 +89,8 @@ export interface MediaPhoto {
   /** AI Vision tags, e.g. ['kitchen', 'dated_kitchen']. Empty when not analysed. */
   tags: string[];
   room: PhotoRoom;
+  /** Who classified `room`: Gemini, AI Vision tags, or nobody (null/absent: don't trust it). */
+  room_by?: 'gemini' | 'vision' | null;
   /** AI Vision has read this photo (tags may still be empty). */
   analysed?: boolean;
 }
