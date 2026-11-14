@@ -70,6 +70,70 @@ function useVisibleSize(onVisible: () => void) {
   return map;
 }
 
+// Zoom levels per pixel of wheel movement. A mouse-wheel notch is ~100 px (≈ half a level); a gentle trackpad
+// swipe is ~250 px (≈ 1.25 levels). Pinch on a trackpad arrives as ctrl+wheel with much smaller deltas.
+const WHEEL_LEVELS_PER_PX = 0.005;
+const PINCH_LEVELS_PER_PX = 0.02;
+
+// Leaflet internals used the same way its own pinch-zoom (Map.TouchZoom) uses them: scale the current tiles while
+// the gesture runs, load new ones when it ends. Calling setZoom each frame instead rebuilt every tile per frame.
+type PinchMap = L.Map & {
+  _moveStart(zoomChanged: boolean, noMoveStart: boolean): L.Map;
+  _move(center: L.LatLng, zoom: number, data?: { pinch?: boolean; round?: boolean }): L.Map;
+  _animateZoom(center: L.LatLng, zoom: number, startAnim: boolean, noUpdate?: boolean | number): void;
+  _limitZoom(zoom: number): number;
+};
+const GESTURE_END_MS = 150;
+
+/**
+ * Wheel/trackpad/pinch zoom around the pointer: applied once per animation frame, with no debounce, and no wheel
+ * input dropped while a zoom animation runs (Leaflet's own wheel handler does both).
+ */
+function WheelZoom() {
+  const map = useMap() as PinchMap;
+  useEffect(() => {
+    const el = map.getContainer();
+    let pending = 0;
+    let raf = 0;
+    let endTimer = 0;
+    let active = false;
+    let zoom = map.getZoom();
+    let center = map.getCenter();
+    let at = L.point(0, 0);
+    const step = () => {
+      raf = 0;
+      const z = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), zoom + pending));
+      pending = 0;
+      if (z === zoom) return;
+      // Keep the point under the pointer fixed (same maths as Map.setZoomAround).
+      const half = map.getSize().divideBy(2);
+      const offset = at.subtract(half).multiplyBy(1 - map.getZoomScale(zoom, z));
+      center = map.unproject(map.project(center, zoom).add(offset), zoom);
+      zoom = z;
+      if (!active) { map._moveStart(true, false); active = true; }
+      map._move(center, zoom, { pinch: true, round: false });
+    };
+    const end = () => {
+      if (raf) { endTimer = window.setTimeout(end, GESTURE_END_MS); return; }
+      active = false;
+      map._animateZoom(center, map._limitZoom(zoom), true, map.options.zoomSnap);
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (!active && !raf) { zoom = map.getZoom(); center = map.getCenter(); }
+      const px = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight : 1); // lines/pages → px
+      pending -= px * (e.ctrlKey ? PINCH_LEVELS_PER_PX : WHEEL_LEVELS_PER_PX);
+      at = map.mouseEventToContainerPoint(e);
+      if (!raf) raf = requestAnimationFrame(step);
+      clearTimeout(endTimer);
+      endTimer = window.setTimeout(end, GESTURE_END_MS);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => { el.removeEventListener('wheel', onWheel); cancelAnimationFrame(raf); clearTimeout(endTimer); };
+  }, [map]);
+  return null;
+}
+
 function FlyTo({ target }: { target: [number, number] | null }) {
   const pending = useRef<[number, number] | null>(null);
   const map = useVisibleSize(() => { if (pending.current) { map.setView(pending.current, Math.max(map.getZoom(), 14)); pending.current = null; } });
@@ -110,13 +174,13 @@ export default function ListingMap({ listings, selectedId, hoverId, freshIds = {
       zoomControl={false}
       attributionControl
       preferCanvas={false}
-      // Mac trackpads send a stream of tiny wheel events. With the default zoomSnap of 1, Leaflet rounds every
-      // 40 ms batch UP to a whole level, so a gentle two-finger scroll flew from city to world view (12 → 0).
-      // Unsnapped instead. Leaflet also divides Mac wheel deltas by 3×DPR, so the per-level distance has to be much
-      // smaller than its default 60. At 10 a 250 px swipe was 0.53 levels, which felt sluggish; at 5 it is 1.05 (Chrome, DPR 2).
+      // Wheel and trackpad zoom is our own WheelZoom below, not Leaflet's: its handler batches wheel events for
+      // 40 ms, then runs a 250 ms zoom animation and drops any wheel input that arrives meanwhile, so a continuous
+      // swipe lagged and lost half its movement. Unsnapped zoom so trackpads can zoom smoothly between levels.
       zoomSnap={0}
-      wheelPxPerZoomLevel={5}
+      scrollWheelZoom={false}
     >
+      <WheelZoom />
       {/* Standard OSM tiles (no key). ListingMap.css tints them toward the Finnish-blue palette. */}
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
