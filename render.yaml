@@ -8,7 +8,8 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: npm ci
+    # Also builds the web app into web/dist (served at /, /signin, /app/*). Skipped until web/package.json exists.
+    buildCommand: npm ci && if [ -f web/package.json ]; then npm --prefix web ci && npm --prefix web run build; fi
     startCommand: node server.mjs
     healthCheckPath: /api/health
     autoDeploy: true

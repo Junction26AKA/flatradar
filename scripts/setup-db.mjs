@@ -3,7 +3,7 @@ import { getDb, client } from '../lib/db.mjs';
 
 const db = await getDb();
 const existing = new Set((await db.listCollections().toArray()).map((c) => c.name));
-for (const name of ['listings', 'events', 'calls', 'users', 'baselines', 'seen_cards', 'runs']) {
+for (const name of ['listings', 'events', 'calls', 'users', 'baselines', 'seen_cards', 'runs', 'sessions']) {
   if (!existing.has(name)) await db.createCollection(name);
 }
 
@@ -22,6 +22,8 @@ await db.collection('calls').createIndexes([
   { key: { started_at: -1 }, name: 'started' },
 ]);
 await db.collection('users').createIndex({ email: 1 }, { unique: true, name: 'email_unique' });
+// Mongo deletes sessions once expires_at passes (lib/auth.mjs also checks it, so this is only cleanup).
+await db.collection('sessions').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'expires_ttl' });
 
 console.log('collections:', (await db.listCollections().toArray()).map((c) => c.name).sort().join(', '));
 await client.close();

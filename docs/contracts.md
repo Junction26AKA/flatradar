@@ -81,10 +81,17 @@ The request body is a `listing` (with or without `score` and `flags`). The respo
 |---|---|
 | `GET /api/listings?kind=sale\|rent&limit=50` | `{ items: [listing] }`, newest `first_seen_at` first |
 | `GET /api/listings/:id` | `listing` + `calls: [CallEnd]` (the fan-out of its last enrichment) |
-| `POST /api/users` `{ email, name, searches: [{ kind, max_price, min_rooms, postcodes: [], min_deal }] }` | `{ id }` |
+| `POST /api/users` `{ email, name, password?, searches: [{ kind, max_price, min_rooms, postcodes: [], min_deal }] }` | `{ id }`. With `password` (8+ chars) it also signs you in (sets the cookie). `409` if the email already has a password and you aren't signed in as it |
+| `GET /api/me` | `{ user: { id, email, name, searches } }`, or `401` if not signed in |
+| `POST /api/session` `{ email, password }` | `{ user }` and sets the session cookie, or `401 { error }` |
+| `DELETE /api/session` | `{ ok: true }` and clears the cookie |
 | `POST /mock/publish` `{ preset?: "kallio-2h" }` | `{ listing_id }` and starts the demo flow |
 | `GET /api/health` | `{ ok, monitors, last_webhook_at, credits_remaining }` |
 | `GET /stream` | Server-Sent Events, see §5 |
+
+**Sign-in** uses an httpOnly `fr_session` cookie on the same origin (30 days, `SameSite=Lax`, `Secure` when `PUBLIC_URL` is https). The web app doesn't touch the cookie: plain `fetch('/api/…')` sends it automatically. On load, call `GET /api/me` to find out who is signed in.
+
+**Web routes:** the server returns `web/dist/index.html` for `/`, `/signin` and `/app/*`, so links to those load directly. Any other path that isn't a file in `web/dist` is a 404, so client-side routes must live under `/app/`. Reference built assets with absolute paths (`/assets/…`, which is Vite's default), because relative ones break under `/app/x/y`.
 
 ## 5. SSE events (`GET /stream`)
 Each message has `event: <type>` and `data: <json>`. A sample stream is in `data/fixtures/sse-sample.txt`.
