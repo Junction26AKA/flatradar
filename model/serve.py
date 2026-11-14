@@ -37,6 +37,18 @@ def load_models():
 load_models()
 
 
+@app.on_event("startup")
+def warm_up():
+    """Open the Mongo connection now: the first DNS + TLS handshake to Atlas takes seconds, and Node's
+    scorer timeout is 3 s, so a cold first /score would otherwise silently fall back to Node's comps."""
+    db = get_db()
+    if db is not None:
+        try:
+            db.command("ping")
+        except Exception as e:
+            print("mongo warm-up failed:", e)
+
+
 def r2(x):
     return None if x is None else round(float(x), 2)
 
