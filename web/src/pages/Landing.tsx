@@ -16,6 +16,7 @@ import { PiggyBank } from '../fx/PiggyBank';
 import { useLandingData, type LandingData } from '../fx/useLandingData';
 import { askingPrice, eur, num, perM2, shortAddress, shortDistrict } from '../lib/format';
 import { useNow } from '../lib/useNow';
+import { LangSwitch, useI18n } from '../lib/i18n';
 import './landing.css';
 
 const Scene3D = lazy(() => import('../fx/Scene3D'));
@@ -73,6 +74,7 @@ export default function Landing() {
 
   const jump = (id: keyof typeof ANCHOR) => scrollToProgress(root.current, ANCHOR[id]);
   const { status } = useAuth();
+  const { t } = useI18n();
   const signedIn = status === 'signed-in';
 
   return (
@@ -84,12 +86,13 @@ export default function Landing() {
         </Link>
         <LiveDot onDark={active.ink === 'light'} />
         <div className="lp__links t-label">
-          <button onClick={() => jump('price')}>How it works</button>
-          <button onClick={() => jump('pricing')}>Pricing model</button>
-          <button onClick={() => jump('live')}>Live map</button>
+          <button onClick={() => jump('price')}>{t('lp.how')}</button>
+          <button onClick={() => jump('pricing')}>{t('lp.pricing')}</button>
+          <button onClick={() => jump('live')}>{t('lp.liveMap')}</button>
         </div>
-        {!signedIn && <Link to="/signin?mode=in" className="lp__signin t-label">Sign in</Link>}
-        <CtaButton className="lp__navcta">{signedIn ? 'Open FlatRadar →' : 'Start saving →'}</CtaButton>
+        <LangSwitch onDark={active.ink === 'light'} className="lp__lang" />
+        {!signedIn && <Link to="/signin?mode=in" className="lp__signin t-label">{t('lp.signIn')}</Link>}
+        <CtaButton className="lp__navcta">{signedIn ? t('lp.open') : t('lp.start')}</CtaButton>
       </nav>
 
       <div ref={root} className="lp__story" style={{ height: `${STORY_VH}vh` }}>
@@ -150,54 +153,54 @@ function Panel({ chapter, progress, active, className = '', children }: { chapte
 
 function Panels({ progress, active, data, onHow }: { progress: MotionValue<number>; active: string; data: LandingData; onHow: () => void }) {
   const now = useNow();
+  const { t } = useI18n();
   return (
     <>
       <Panel chapter="hero" progress={progress} active={active}>
-        <p className="t-eyebrow lp__eyebrow">Helsinki · live on Etuovi + Vuokraovi</p>
-        <h1 id="h-hero" className="t-hero">Stop overpaying for Helsinki flats.</h1>
+        <p className="t-eyebrow lp__eyebrow">{t('lp.eyebrow')}</p>
+        <h1 id="h-hero" className="t-hero">{t('lp.hero')}</h1>
         <p className="t-body-l lp__sub">
-          Every new listing scored against comparable flats, an ML model and Statistics Finland prices, in seconds, with the hidden costs called out.
+          {t('lp.heroSub')}
         </p>
         <div className="lp__odo">
           <Odometer value={data.overpricing} className="t-num-xl" />
           <span className="t-body-s lp__odocap">
-            of overpricing spotted this week{data.overpricedCount ? ` across ${data.overpricedCount} flats` : ''}
-            {data.source === 'fixtures' && ' (sample data)'}
+            {t('lp.odoCap', { n: data.overpricedCount, sample: data.source === 'fixtures' })}
           </span>
         </div>
         <div className="lp__ctas">
-          <CtaButton>Start saving →</CtaButton>
-          <a className="lp__ghost" href="#how" onClick={(e) => { e.preventDefault(); onHow(); }}>See how it works</a>
+          <CtaButton>{t('lp.start')}</CtaButton>
+          <a className="lp__ghost" href="#how" onClick={(e) => { e.preventDefault(); onHow(); }}>{t('lp.seeHow')}</a>
         </div>
-        <p className="t-num-s lp__hint" aria-hidden="true">scroll ↓ to watch the money</p>
+        <p className="t-num-s lp__hint" aria-hidden="true">{t('lp.hint')}</p>
       </Panel>
 
       <Panel chapter="price" progress={progress} active={active}>
-        <h2 id="h-price" className="t-h1">We know what it’s really worth.</h2>
+        <h2 id="h-price" className="t-h1">{t('lp.priceH')}</h2>
         <p className="t-body-l lp__sub">
-          Comparable flats within 1 km, a model trained on Helsinki listings, and Statistics Finland’s postcode prices, blended into one fair price.
+          {t('lp.priceSub')}
         </p>
       </Panel>
 
       <Panel chapter="costs" progress={progress} active={active}>
-        <h2 id="h-costs" className="t-h1">See the costs they don’t put in the headline.</h2>
+        <h2 id="h-costs" className="t-h1">{t('lp.costsH')}</h2>
         <p className="t-body-l lp__sub">
-          We read the renovation plans, the housing company’s papers and local news, so a “cheap” flat with a pipe renovation next year doesn’t look cheap any more.
+          {t('lp.costsSub')}
         </p>
       </Panel>
 
       <Panel chapter="pricing" progress={progress} active={active}>
-        <h2 id="h-pricing" className="t-h1">Three sources. One fair price.</h2>
+        <h2 id="h-pricing" className="t-h1">{t('lp.pricingH')}</h2>
         <p className="t-body-l lp__sub">
-          Every number is shown with where it came from. The blend gets a confidence level, and we publish the model’s error, not just its answer.
+          {t('lp.pricingSub')}
         </p>
       </Panel>
 
       <Panel chapter="live" progress={progress} active={active} className="lp__panel--wide">
-        <p className="lp__livepill t-num-s"><LiveDot /> {data.watched ? `${num(data.watched)} flats for sale watched` : 'Watching Etuovi + Vuokraovi'}</p>
-        <h2 id="h-live" className="t-h1">Watching Helsinki right now.</h2>
-        <p className="t-body-l lp__sub">New listings and price drops are scored within seconds. Good deals light up and land in your inbox.</p>
-        <div className="lp__ticker" aria-label="Newest scored listings">
+        <p className="lp__livepill t-num-s"><LiveDot /> {data.watched ? t('lp.livePill', { n: num(data.watched) }) : t('lp.livePillNone')}</p>
+        <h2 id="h-live" className="t-h1">{t('lp.liveH')}</h2>
+        <p className="t-body-l lp__sub">{t('lp.liveSub')}</p>
+        <div className="lp__ticker" aria-label={t('lp.tickerLabel')}>
           {data.ticker.slice(0, 6).map((l) => (
             <ListingCard key={l._id} listing={l} now={now} to={`/app/l/${encodeURIComponent(l._id)}`} compact fresh={now - Date.parse(l.first_seen_at) < 60_000} />
           ))}
@@ -205,12 +208,12 @@ function Panels({ progress, active, data, onHow }: { progress: MotionValue<numbe
       </Panel>
 
       <Panel chapter="cta" progress={progress} active={active} className="lp__panel--cta">
-        <h2 id="h-cta" className="t-h1">Your savings start here.</h2>
+        <h2 id="h-cta" className="t-h1">{t('lp.ctaH')}</h2>
         <div className="lp__ctas">
-          <CtaButton variant="primary">Start watching, it’s free →</CtaButton>
-          <Link className="lp__ghost" to="/app">See the live map</Link>
+          <CtaButton variant="primary">{t('lp.ctaPrimary')}</CtaButton>
+          <Link className="lp__ghost" to="/app">{t('lp.ctaMap')}</Link>
         </div>
-        <p className="t-body-l lp__sub">Set a search like “2 rooms under €280k in Kallio”. We’ll email you the moment a good deal appears.</p>
+        <p className="t-body-l lp__sub">{t('lp.ctaSub')}</p>
       </Panel>
     </>
   );
@@ -272,6 +275,7 @@ function FlagCross({ progress }: { progress: MotionValue<number> }) {
 
 function PriceTag({ progress, data }: { progress: MotionValue<number>; data: LandingData }) {
   const { listing: l, isExample } = data.priceExample;
+  const { t } = useI18n();
   const ask = askingPrice(l);
   const fair = l.score?.fair_price ?? null;
   const pct = l.score?.deal_pct ?? 0;
@@ -283,14 +287,14 @@ function PriceTag({ progress, data }: { progress: MotionValue<number>; data: Lan
   return (
     <>
       <motion.div data-fx="tag" className="lp__tag" style={{ opacity: tagIn, rotate: swing, scale: tagIn }} aria-hidden="true">
-        <span className="t-eyebrow">Asking{isExample ? ' · example' : ''}</span>
+        <span className="t-eyebrow">{t('lp.asking')}{isExample ? ` · ${t('lp.example')}` : ''}</span>
         <span className="t-num-l lp__tagprice">{eur(ask)}</span>
-        <span className="lp__stamp t-eyebrow">Overpriced +{(pct * 100).toFixed(0)}%</span>
+        <span className="lp__stamp t-eyebrow">{t('lp.overpriced', { p: (pct * 100).toFixed(0) })}</span>
       </motion.div>
       <motion.div className="lp__fair" style={{ opacity: fairIn, scale: fairScale }} aria-hidden="true">
-        <span className="t-eyebrow lp__fairlbl">Fair value · {shortAddress(l)}, {shortDistrict(l)}</span>
+        <span className="t-eyebrow lp__fairlbl">{t('lp.fairValue')} · {shortAddress(l)}, {shortDistrict(l)}</span>
         <span className="t-num-l lp__fairprice">{eur(fair)}</span>
-        <DealBadge pct={pct} label={`${eur(ask - fair)} too high`} />
+        <DealBadge pct={pct} label={t('lp.tooHigh', { eur: eur(ask - fair) })} />
       </motion.div>
     </>
   );
@@ -298,6 +302,7 @@ function PriceTag({ progress, data }: { progress: MotionValue<number>; data: Lan
 
 function FlyingFlags({ progress, data, narrow }: { progress: MotionValue<number>; data: LandingData; narrow: boolean }) {
   const { listing, isExample } = data.costsExample;
+  const { t } = useI18n();
   const flags = useMemo(() => sortFlags(listing.flags.filter((f) => f.status === 'ok')).slice(0, 4), [listing]);
   const quoted = flags.find((f) => f.source?.quote);
   // where each chip lands, relative to the house centre (in % of the stage)
@@ -311,7 +316,7 @@ function FlyingFlags({ progress, data, narrow }: { progress: MotionValue<number>
         <FlyingChip progress={progress} i={flags.length} to={[-1, 16]}>
           <span className="lp__quote">
             <span className="t-body-s">“{quoted.source.quote}”</span>
-            <span className="t-num-s lp__quotesrc">{isExample ? 'example listing' : `${listing.portal}.com · ${shortAddress(listing)}`}</span>
+            <span className="t-num-s lp__quotesrc">{isExample ? t('lp.exampleListing') : `${listing.portal}.com · ${shortAddress(listing)}`}</span>
           </span>
         </FlyingChip>
       )}
@@ -331,10 +336,11 @@ function CoinTowers({ progress, data }: { progress: MotionValue<number>; data: L
   const { listing: l, isExample } = data.pricingExample;
   const s = l.score;
   const kind = l.kind;
+  const { t } = useI18n();
   const sources = [
-    { name: 'Comparables', sub: s?.comps ? `${s.comps.n} flats ≤${Math.round((s.comps.radius_m ?? 1000) / 100) / 10} km` : 'not enough nearby', v: s?.comps?.fair_m2 ?? null },
-    { name: 'ML model', sub: s?.model ? `${s.model.version} · MAE ${Math.round(s.model.mae_pct * 100)}%` : 'training', v: s?.model?.fair_m2 ?? null },
-    { name: 'Statistics Finland', sub: s?.baseline ? `${s.baseline.postcode} · ${s.baseline.year}` : 'no postcode data', v: s?.baseline?.eur_m2 ?? null },
+    { name: t('lp.src.comps'), sub: s?.comps ? t('lp.src.compsSub', { n: s.comps.n, km: Math.round((s.comps.radius_m ?? 1000) / 100) / 10 }) : t('lp.src.compsNone'), v: s?.comps?.fair_m2 ?? null },
+    { name: t('lp.src.model'), sub: s?.model ? `${s.model.version} · MAE ${Math.round(s.model.mae_pct * 100)}%` : t('lp.src.modelTraining'), v: s?.model?.fair_m2 ?? null },
+    { name: t('lp.src.stat'), sub: s?.baseline ? `${s.baseline.postcode} · ${s.baseline.year}` : t('lp.src.statNone'), v: s?.baseline?.eur_m2 ?? null },
   ];
   const max = Math.max(...sources.map((x) => x.v ?? 0), 1);
   const beam = useTransform(progress, (p) => -6 + 6 * ramp(p, OVERLAY.beam[0], OVERLAY.beam[1]));
@@ -343,9 +349,9 @@ function CoinTowers({ progress, data }: { progress: MotionValue<number>; data: L
   return (
     <motion.div className="lp__towers" style={{ opacity: show }} aria-hidden="true">
       <motion.div className="lp__beam" style={{ rotate: beam }}>
-        <span className="t-num-l">Fair {perM2(s.fair_m2, kind)}</span>
-        <DealBadge pct={0} label={`confidence: ${s.confidence}`} size="s" />
-        {isExample && <span className="t-num-s lp__eg">example listing</span>}
+        <span className="t-num-l">{t('lp.fair')} {perM2(s.fair_m2, kind)}</span>
+        <DealBadge pct={0} label={t('lp.confidence', { c: t(`confidence.${s.confidence}`) })} size="s" />
+        {isExample && <span className="t-num-s lp__eg">{t('lp.exampleListing')}</span>}
       </motion.div>
       <div className="lp__towerrow">
         {sources.map((src, i) => <Tower key={src.name} progress={progress} i={i} n={src.v ? Math.max(3, Math.round((14 * src.v) / max)) : 2} missing={!src.v} label={src.v ? perM2(src.v, kind) : '—'} name={src.name} sub={src.sub} />)}

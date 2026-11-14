@@ -198,3 +198,14 @@
   .lp__piggy { right: auto; left: 50%; margin-left: -28vw; width: 56vw; bottom: 3vh; }
   .lp__ticker > * { flex-basis: 250px; }
 }
+
+/* Language switch in the landing nav. On phones it collapses to one button showing the other language
+   (tap "FI" to switch), and on the narrowest phones the wordmark hides next to the logo, so
+   logo + switch + Sign in + CTA still fit on one line at 320 px. */
+@media (max-width: 420px) {
+  .lp__lang button[aria-pressed='true'] { display: none; }
+  .lp__lang button { padding: 5px 8px; }
+}
+@media (max-width: 360px) {
+  .lp__brand .t-h4 { display: none; }
+}

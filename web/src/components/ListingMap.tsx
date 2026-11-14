@@ -4,6 +4,7 @@ import L from 'leaflet';
 import Supercluster from 'supercluster';
 import 'leaflet/dist/leaflet.css';
 import { dealTone } from '../lib/format';
+import { useI18n } from '../lib/i18n';
 import type { Listing } from '../lib/types';
 import './ListingMap.css';
 
@@ -150,16 +151,17 @@ function bestLabel(best: number | null) {
   return p < 0 ? `−${-p}%` : p > 0 ? `+${p}%` : '±0%';
 }
 
-function clusterIcon(count: number, best: number | null, hover: boolean) {
+function clusterIcon(count: number, best: number | null, hover: boolean, title: string) {
   const tone = best == null ? 'none' : dealTone(best);
   const size = count < 10 ? 's' : count < 50 ? 'm' : 'l';
   return divIcon(
-    `<span class="cluster cluster--${tone} cluster--${size}${hover ? ' cluster--hover' : ''}" title="Best deal inside: ${bestLabel(best) || 'not scored'}"><b>${count}</b>${best != null ? `<small>${bestLabel(best)}</small>` : ''}</span>`,
+    `<span class="cluster cluster--${tone} cluster--${size}${hover ? ' cluster--hover' : ''}" title="${title}"><b>${count}</b>${best != null ? `<small>${bestLabel(best)}</small>` : ''}</span>`,
   );
 }
 
 function ClusteredPins({ placed, selectedId, hoverId, freshIds, onSelect }: Props2) {
   const { map, zoom, bounds } = useView();
+  const { t } = useI18n();
   const now = Date.now();
   const pinned = (l: Listing) => l._id === selectedId || (freshIds[l._id] != null && now - freshIds[l._id] < FRESH_UNCLUSTERED_MS);
 
@@ -226,11 +228,11 @@ function ClusteredPins({ placed, selectedId, hoverId, freshIds, onSelect }: Prop
           <Marker
             key={`c${id}`}
             position={[lat, lng]}
-            icon={clusterIcon(props.point_count!, props.best ?? null, hoverCluster === id)}
+            icon={clusterIcon(props.point_count!, props.best ?? null, hoverCluster === id, t('map.best', { d: bestLabel(props.best ?? null) || t('map.notScored') }))}
             zIndexOffset={hoverCluster === id ? 1500 : 500}
             eventHandlers={{ click: () => map.flyTo([lat, lng], Math.min(index.getClusterExpansionZoom(id), 18), { duration: 0.5 }) }}
             keyboard
-            title={`${props.point_count} listings. Click to zoom in.`}
+            title={t('map.clusterTitle', { n: props.point_count })}
           />
         );
       })}

@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useOutletContext, useParams, useSearchParams } fro
 import { Coin } from '../components/Coin';
 import { ListingCard } from '../components/ListingCard';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../lib/i18n';
 import { dealLabel, shortDistrict } from '../lib/format';
 import { matchesAny } from '../lib/match';
 import { useFeed, useListings } from '../lib/store';
@@ -18,6 +19,7 @@ type Filter = 'good' | 'match';
 /** /app and /app/l/:id: feed | map | (detail drawer when a listing is open). */
 export default function Feed() {
   const { kind } = useOutletContext<{ kind: Kind }>();
+  const { t } = useI18n();
   const { id: selectedId = null } = useParams();
   const nav = useNavigate();
   const { user } = useAuth();
@@ -54,20 +56,20 @@ export default function Feed() {
 
   return (
     <div className={`feed${selectedId ? ' feed--detail' : ''}${showMap ? ' feed--map-open' : ''}`}>
-      <section className="feed__list" ref={listRef} aria-label="Listings">
+      <section className="feed__list" ref={listRef} aria-label={t('feed.listings')}>
         <header className="feed__head">
           <h1 className="t-h3">
-            New in Helsinki <span className="t-num-s muted">{listings.length}{listings.length !== all.length && ` of ${all.length}`}</span>
+            {t('feed.title')} <span className="t-num-s muted">{listings.length}{listings.length !== all.length && t('feed.of', { n: all.length })}</span>
           </h1>
-          <div className="feed__filters" role="group" aria-label="Filters">
-            <button className="fchip" aria-pressed={filters.has('good')} onClick={() => toggle('good')}>Good deals</button>
-            {!!searches?.length && <button className="fchip" aria-pressed={filters.has('match')} onClick={() => toggle('match')}>Matches my search</button>}
-            <button className="fchip feed__maptoggle" aria-pressed={showMap} onClick={() => setShowMap((v) => !v)}>Map</button>
+          <div className="feed__filters" role="group" aria-label={t('feed.filters')}>
+            <button className="fchip" aria-pressed={filters.has('good')} onClick={() => toggle('good')}>{t('feed.good')}</button>
+            {!!searches?.length && <button className="fchip" aria-pressed={filters.has('match')} onClick={() => toggle('match')}>{t('feed.match')}</button>}
+            <button className="fchip feed__maptoggle" aria-pressed={showMap} onClick={() => setShowMap((v) => !v)}>{t('feed.map')}</button>
           </div>
-          {source === 'fixtures' && <p className="feed__note t-body-s">Can’t reach the server, so this is sample data.</p>}
+          {source === 'fixtures' && <p className="feed__note t-body-s">{t('feed.sample')}</p>}
           {toast && (
             <button className="feed__toast t-label" onClick={() => open(toast.id)}>
-              <Coin size={18} /> New deal just landed · {toast.where} {toast.deal}
+              <Coin size={18} /> {t('feed.toast', { where: toast.where, deal: dealLabel(toast.pct) /* formatted at render: follows a language switch */ })}
             </button>
           )}
         </header>
@@ -75,7 +77,7 @@ export default function Feed() {
         {loading && !all.length && <div className="feed__skel" aria-busy="true">{[0, 1, 2].map((i) => <span key={i} />)}</div>}
         {!loading && !listings.length && (
           <p className="feed__empty muted">
-            {all.length ? 'Nothing matches these filters right now.' : `No ${kind === 'rent' ? 'rentals' : 'flats for sale'} yet. New ones appear here the moment they’re listed.`}
+            {all.length ? t('feed.noMatch') : t(kind === 'rent' ? 'feed.emptyRent' : 'feed.emptySale')}
           </p>
         )}
 
@@ -97,20 +99,20 @@ export default function Feed() {
         </div>
         {listings.length > limit && (
           <button className="feed__more t-label" onClick={() => setLimit((n) => n + PAGE)}>
-            Show {Math.min(PAGE, listings.length - limit)} more
+            {t('feed.more', { n: Math.min(PAGE, listings.length - limit) })}
           </button>
         )}
       </section>
 
-      <section className="feed__map" aria-label="Map">
+      <section className="feed__map" aria-label={t('feed.mapLabel')}>
         <Suspense fallback={<div className="feed__mapload" />}>
           <ListingMap listings={listings} selectedId={selectedId} hoverId={hoverId} freshIds={fresh} onSelect={open} />
         </Suspense>
       </section>
 
       {selectedId && (
-        <aside className="feed__detail" aria-label="Listing detail">
-          <button className="feed__close" onClick={() => nav(`/app?kind=${kind}`)} aria-label="Close detail">×</button>
+        <aside className="feed__detail" aria-label={t('feed.detail')}>
+          <button className="feed__close" onClick={() => nav(`/app?kind=${kind}`)} aria-label={t('feed.close')}>×</button>
           <Outlet />
         </aside>
       )}
@@ -120,13 +122,13 @@ export default function Feed() {
 
 /** Shows "New deal just landed" for 8 s when a good deal arrives over the stream (or gets scored as one). */
 function useNewDealToast(all: Listing[], fresh: Record<string, number>) {
-  const [toast, setToast] = useState<{ id: string; where: string; deal: string } | null>(null);
+  const [toast, setToast] = useState<{ id: string; where: string; pct: number } | null>(null);
   const shown = useRef(new Set<string>());
   useEffect(() => {
     const hit = all.find((l) => fresh[l._id] && l.score && l.score.deal_pct <= -0.03 && !shown.current.has(l._id));
     if (!hit?.score) return;
     shown.current.add(hit._id);
-    setToast({ id: hit._id, where: shortDistrict(hit) ?? '', deal: dealLabel(hit.score.deal_pct) });
+    setToast({ id: hit._id, where: shortDistrict(hit) ?? '', pct: hit.score.deal_pct });
   }, [all, fresh]);
   // The hide timer depends only on the toast: listing updates keep changing `all`, and must not cancel it.
   useEffect(() => {

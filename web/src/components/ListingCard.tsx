@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { ago, factsLine, perM2, pricePerM2, priceLabel, shortAddress, shortDistrict } from '../lib/format';
+import { ago, agoShort, factsLine, perM2, pricePerM2, priceLabel, shortAddress, shortDistrict } from '../lib/format';
+import { useI18n } from '../lib/i18n';
 import type { PriceChange } from '../lib/store';
 import type { Listing } from '../lib/types';
 import { DealBadge, PriceChangeBadge } from './DealBadge';
@@ -24,6 +25,7 @@ const MAX_CHIPS = 3;
 
 /** Figma "ListingCard" (Size=Full / Compact). */
 export const ListingCard = memo(function ListingCard({ listing: l, now, to, compact, fresh, selected, matches, priceChange, onHover }: Props) {
+  const { t, lang } = useI18n();
   const score = l.score;
   const flags = sortFlags(l.flags ?? []);
   const shown = flags.slice(0, MAX_CHIPS);
@@ -44,32 +46,33 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
     >
       <div className="lcard__top">
         <span className="t-eyebrow lcard__where">
-          {[shortDistrict(l), compact ? null : l.postcode].filter(Boolean).join(' · ') || (l.kind === 'rent' ? 'For rent' : 'For sale')}
+          {[shortDistrict(l), compact ? null : l.postcode].filter(Boolean).join(' · ') || t(l.kind === 'rent' ? 'kind.forRent' : 'kind.forSale')}
         </span>
         <span className={`t-num-s lcard__seen${seenS < 120 ? ' is-new' : ''}`}>
-          ● {compact ? ago(l.first_seen_at, now).replace(' ago', '') : `seen ${ago(l.first_seen_at, now)}`}
+          ● {compact ? agoShort(l.first_seen_at, now) : t('card.seen', { ago: ago(l.first_seen_at, now) })}
         </span>
       </div>
 
       <h3 className="t-h3 lcard__addr">{shortAddress(l)}</h3>
-      <p className="t-body-s lcard__facts">{factsLine(l) || ' '}</p>
+      {/* English mode spells out the Finnish room codes; the portal's original is on hover. */}
+      <p className="t-body-s lcard__facts" title={lang === 'en' && l.rooms_description ? t('card.roomsOriginal', { s: l.rooms_description }) : undefined}>{factsLine(l) || ' '}</p>
 
       <div className="lcard__price">
         <span className="t-num-l">{priceLabel(l)}</span>
         {score ? (
           <DealBadge pct={score.deal_pct} />
         ) : scoring ? (
-          <span className="lcard__scoring t-num-s">scoring…</span>
+          <span className="lcard__scoring t-num-s">{t('card.scoring')}</span>
         ) : (
-          <span className="t-num-s lcard__noscore" title="Not enough comparable listings yet">no score yet</span>
+          <span className="t-num-s lcard__noscore" title={t('card.noScoreTitle')}>{t('card.noScore')}</span>
         )}
         {priceChange && <PriceChangeBadge oldPrice={priceChange.old_price} newPrice={priceChange.new_price} />}
       </div>
 
       <p className="t-num-s lcard__perm2">
         {perM2(pricePerM2(l), l.kind)}
-        {score && ` · fair ${perM2(score.fair_m2, l.kind).replace(/ €.*/, '')}`}
-        {score && score.confidence === 'low' && <span className="lcard__conf"> · low confidence</span>}
+        {score && ` · ${t('card.fair')} ${perM2(score.fair_m2, l.kind).replace(/ €.*/, '')}`}
+        {score && score.confidence === 'low' && <span className="lcard__conf"> · {t('card.lowConfidence')}</span>}
       </p>
 
       {!compact && flags.length > 0 && (
@@ -79,7 +82,7 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
         </div>
       )}
 
-      {matches && <span className="lcard__matchtag t-label">Matches your search</span>}
+      {matches && <span className="lcard__matchtag t-label">{t('card.matches')}</span>}
     </Link>
   );
 });
