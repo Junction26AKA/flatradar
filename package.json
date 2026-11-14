@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "smoke": "node --env-file-if-exists=.env scripts/smoke-test.mjs",
-    "start": "node --env-file-if-exists=.env server.mjs"
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "setup-db": "node --env-file-if-exists=.env scripts/setup-db.mjs",
+    "backfill": "node --env-file-if-exists=.env scripts/backfill.mjs"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
