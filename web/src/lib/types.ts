@@ -88,6 +88,8 @@ export interface MediaPhoto {
   /** AI Vision tags, e.g. ['kitchen', 'dated_kitchen']. Empty when not analysed. */
   tags: string[];
   room: PhotoRoom;
+  /** AI Vision has read this photo (tags may still be empty). */
+  analysed?: boolean;
 }
 
 /** lib/media: listing photos in Cloudinary. Arrives a few seconds after the listing is `ready`. */

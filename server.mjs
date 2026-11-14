@@ -11,7 +11,7 @@ import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, pr
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
 import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
-import { mediaEnabled, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
+import { mediaEnabled, ownPublicId, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
 import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
@@ -130,8 +130,9 @@ async function route(req, res) {
   }
 
   if (p === '/api/health') {
-    const [monitors, last] = await Promise.all([
-      db.collection('monitors').find({}, { projection: { secret: 0 } }).toArray(),
+    const [monitors, listingMonitors, last] = await Promise.all([
+      db.collection('monitors').find({ kind: { $ne: 'listing' } }, { projection: { secret: 0 } }).toArray(),
+      db.collection('monitors').countDocuments({ kind: 'listing' }),
       db.collection('webhook_events').find().sort({ at: -1 }).limit(1).next(),
     ]);
     const counts = await db.collection('listings').aggregate([{ $group: { _id: '$kind', n: { $sum: 1 } } }]).toArray();
@@ -140,7 +141,7 @@ async function route(req, res) {
     const scorer = scorerUrl
       ? await fetch(`${scorerUrl}/health`, { signal: AbortSignal.timeout(2500) }).then((r) => r.json()).catch((e) => ({ ok: false, error: e.name }))
       : null;
-    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer, street_works: streetWorksStatus() });
+    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, listing_monitors: listingMonitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer, street_works: streetWorksStatus() });
   }
 
   if (p === '/api/listings' && req.method === 'GET') {
@@ -225,7 +226,9 @@ async function route(req, res) {
   if (p === '/mock/publish' && req.method === 'POST') {
     const b = await readJson(req);
     const preset = b.preset && PRESETS[b.preset] ? b.preset : 'kallio-2h';
-    const photos = Array.isArray(b.photos) ? b.photos.filter((u) => typeof u === 'string').slice(0, 12) : [];
+    // Only photos already in our Cloudinary account (the Upload Widget's): this route is public, and other URLs
+    // would make us upload arbitrary images and spend AI Vision tokens on them.
+    const photos = Array.isArray(b.photos) ? b.photos.filter((u) => ownPublicId(u)).slice(0, 12) : [];
     return send(res, 200, { listing_id: await triggerMock(preset, photos) });
   }
   if ((m = p.match(/^\/mock\/([\w-]+)$/))) {
@@ -247,6 +250,12 @@ async function route(req, res) {
     const ids = b.id ? [b.id] : (await db.collection('listings').find({ 'photos.0': { $exists: true } }, { projection: { _id: 1 } }).sort({ first_seen_at: -1 }).limit(Math.min(Number(b.limit) || 10, 50)).toArray()).map((d) => d._id);
     (async () => { for (const id of ids) await processListingPhotos(id); })().catch((e) => log('photo pass failed', e.message));
     return send(res, 202, { started: ids });
+  }
+  if (p === '/admin/listing-monitors' && req.method === 'POST') {
+    if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
+    const b = await readJson(req);
+    const { backfillListingMonitors } = await import('./lib/listing-monitors.mjs');
+    return send(res, 200, await backfillListingMonitors(b.max != null ? { max: Number(b.max) } : {}));
   }
   if (p === '/admin/poll' && req.method === 'POST') {
     if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });

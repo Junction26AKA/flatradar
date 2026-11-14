@@ -48,9 +48,10 @@ Runs after the listing is `ready`, never awaited (like the Gemini analyst). Only
 {
   "status": "pending" | "ok" | "error",
   "cloud": "<cloud name>",            // the web app builds delivery URLs from this + public_id (no env vars needed)
-  "photos": [{ "public_id": "flatradar/listings/etuovi-20828740/0", "width": 1600, "height": 1067,
+  "photos": [{ "public_id": "flatradar/listings/etuovi-20828740/3f9a1c0be27d", "width": 1600, "height": 1067,
                "source_url": "https://…", "tags": ["kitchen", "dated_kitchen"],   // Cloudinary AI Vision tags
-               "room": "kitchen" | "bathroom" | "exterior" | "plan" | "room" }],
+               "room": "kitchen" | "bathroom" | "exterior" | "plan" | "room",
+               "analysed": true }],         // this photo went through AI Vision (re-runs skip it)
   "analysed": true,                   // false = AI Vision add-on off or failed; photos still shown
   "error": null, "ms": 6400, "at": "ISO date"
 }
