@@ -47,3 +47,36 @@
   .sform__row { grid-template-columns: 1fr; }
   .srch__head .btn { width: 100%; }
 }
+
+/* typed search ("Describe what you're looking for") */
+.describe { display: grid; gap: 6px; padding: 16px 20px; border-radius: 16px; background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); }
+.describe p { margin: 0; }
+.describe__row { display: flex; gap: var(--space-2); }
+.describe__input {
+  flex: 1; min-width: 0; height: 42px; padding: 0 12px; border-radius: 10px;
+  font: 400 15px var(--font-body); color: var(--text-primary); border: 1.5px solid var(--border); background: var(--bg-surface);
+}
+.describe__input:focus { outline: none; border-color: var(--border-brand); }
+.parsed { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; background: var(--bg-subtle); }
+.parsed p { margin: 0; }
+
+/* commute + exclusions in the form */
+.sform__commute { display: grid; gap: 6px; }
+.commute__find { display: flex; gap: var(--space-2); }
+.commute__find input { flex: 1; }
+.commute__set { display: flex; align-items: center; gap: var(--space-2); }
+.commute__set select { width: auto; }
+.commute__to { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.commute__hits { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.commute__hits .btn { text-align: left; font-weight: 400; }
+.sform__ex { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+.sform__exlist { display: flex; flex-wrap: wrap; gap: 6px; }
+.scard--form label.sform__check {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full);
+  border: 1px solid var(--border); background: var(--bg-subtle); font: 400 13px/18px var(--font-body); cursor: pointer;
+}
+.scard--form .sform__check input { height: auto; padding: 0; accent-color: var(--bg-brand); }
+.scard--form .sform__check:has(input:checked) { border-color: var(--border-brand); }
+.scard__commute { color: var(--text-primary); }
+.scard__code--ex { border-color: color-mix(in srgb, var(--deal-bad) 40%, var(--border)); }
+@media (max-width: 520px) { .describe__row { flex-direction: column; } }

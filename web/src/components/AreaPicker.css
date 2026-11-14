@@ -10,3 +10,7 @@
 .scard--form .apick__list input[type='range'] { height: auto; padding: 0; border: 0; background: none; accent-color: var(--bg-brand); }
 .apick__km { min-width: 4.5em; text-align: right; }
 .apick__rm { font-size: 18px; line-height: 1; color: var(--deal-bad); padding: 2px 6px; }
+.apick__mode { margin-bottom: 2px; }
+.apick__map.is-draw .lmap { cursor: crosshair; touch-action: none; }
+.apick__map.is-draw.is-full .lmap { cursor: grab; touch-action: auto; }
+.apick__trail { fill: none; stroke: var(--border-brand); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }

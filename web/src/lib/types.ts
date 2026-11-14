@@ -158,6 +158,8 @@ export interface Listing {
   last_price_drop?: { old_price: number; new_price: number; at: string } | null;
   /** set when the listing's own monitor finds it sold or removed */
   removed_at?: string | null;
+  /** HSL journey-planner times to saved-search commute targets, keyed by commuteKey(lat, lng) (lib/geo.mjs) */
+  commutes?: Record<string, CommuteTime>;
   score: Score | null;
   flags: Flag[];
   insight?: Insight | null;
@@ -194,6 +196,28 @@ export interface SearchArea {
   lat: number;
   lng: number;
   radius_m: number;
+  /** place name when the circle came from a typed search ("Kallio") */
+  label?: string;
+}
+
+/** A shape drawn freehand on the map: [lat, lng] points, not closed. */
+export interface SearchPolygon {
+  points: [number, number][];
+}
+
+/** "At most 30 min by public transport to …" */
+export interface CommuteTarget {
+  label: string;
+  lat: number;
+  lng: number;
+  max_min: number;
+}
+
+export interface CommuteTime {
+  min: number;
+  /** hsl = HSL journey planner, estimate = from straight-line distance */
+  src: 'hsl' | 'estimate';
+  at?: string;
 }
 
 export interface SavedSearch {
@@ -201,8 +225,14 @@ export interface SavedSearch {
   max_price: number | null;
   min_rooms: number | null;
   postcodes: string[];
-  /** Map circles. Postcodes and areas are alternatives: a listing in any postcode OR inside any circle matches. */
+  /** Map circles. Postcodes, circles and polygons are alternatives: a listing in any of them matches. */
   areas?: SearchArea[];
+  /** Areas drawn freehand on the map. */
+  polygons?: SearchPolygon[];
+  /** Public-transport time limit to one place. */
+  commute?: CommuteTarget | null;
+  /** Skip listings with a (non-info) flag of these types, e.g. ['pipe_renovation']. */
+  exclude_flags?: FlagType[];
   /** e.g. -0.10 = alert when at least 10% below fair */
   min_deal: number | null;
 }

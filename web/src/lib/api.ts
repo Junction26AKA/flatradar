@@ -1,4 +1,4 @@
-import type { Health, Kind, Listing, ListingDetail, SavedSearch } from './types';
+import type { CommuteTime, Health, Kind, Listing, ListingDetail, SavedSearch } from './types';
 import saleScored from '@fixtures/listing-sale-scored.json';
 import sale from '@fixtures/listing-sale.json';
 import rent from '@fixtures/listing-rent.json';
@@ -103,6 +103,19 @@ export const deleteSession = () => send<{ ok: true }>('DELETE', '/api/session');
 /** POST/DELETE /api/favourites/:id → the user's favourites after the change. */
 export const setFavourite = (id: string, on: boolean) =>
   send<{ favourites: string[] }>(on ? 'POST' : 'DELETE', `/api/favourites/${encodeURIComponent(id)}`).then((r) => r.favourites);
+
+/** POST /api/search/parse: "2-room in Kallio under 300k…" → a draft search (not saved). */
+export interface ParsedSearch { search: SavedSearch; summary: string | null; notes: string[]; via: 'gemini' | 'rules' }
+export const parseSearchText = (text: string) => send<ParsedSearch>('POST', '/api/search/parse', { text });
+
+/** GET /api/geocode: place or address → candidates in the Helsinki region. */
+export interface Place { label: string; lat: number; lng: number }
+export const geocodePlace = (q: string) =>
+  send<{ items: Place[] }>('GET', `/api/geocode?q=${encodeURIComponent(q)}`).then((r) => r.items);
+
+/** GET /api/listings/:id/commute: HSL planner time to a point (cached), or the estimate. */
+export const getCommute = (id: string, lat: number, lng: number) =>
+  send<CommuteTime>('GET', `/api/listings/${encodeURIComponent(id)}/commute?lat=${lat}&lng=${lng}`);
 
 /** Stage demo: publish the mock flat and trigger the monitor. */
 export async function publishMock(preset = 'kallio-2h'): Promise<{ listing_id: string }> {

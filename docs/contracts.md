@@ -34,6 +34,8 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
   "media": Media | null,              // §1b, filled in by lib/media (Cloudinary) a few seconds after `ready`
   "first_seen_at": "ISO date", "last_seen_at": "ISO date",
   "removed_at": "ISO date" | null,  // set by the per-listing monitor (lib/listing-monitors) when the ad is gone
+  "commutes": { "601688_249316": { "min": 23, "src": "hsl", "at": "ISO date" } },  // HSL planner times to saved-search
+                                    // commute targets, key = commuteKey(lat, lng) in lib/geo.mjs. Only with DIGITRANSIT_KEY
   "price_history": [{ "at": "ISO date", "price": 329000, "debt_free_price": 329000, "rent": null }],
   "score": Score | null,              // §2, filled in by Kevin's /score
   "flags": [Flag],                    // §3, filled in by Adam's enrichment; grows as calls return
@@ -129,18 +131,25 @@ The model never produces a number:
 |---|---|
 | `GET /api/listings?kind=sale\|rent&limit=50` | `{ items: [listing] }`, newest `first_seen_at` first |
 | `GET /api/listings/:id` | `listing` + `calls: [CallEnd]` (the fan-out of its last enrichment) |
-| `POST /api/users` `{ email, name, password?, searches: [{ kind, max_price, min_rooms, postcodes: [], areas: [{ lat, lng, radius_m }], min_deal }] }` | `{ id }`. With `password` (8+ chars) it also signs you in (sets the cookie). `409` if the email already has a password and you aren't signed in as it |
+| `POST /api/users` `{ email, name, password?, searches: [{ kind, max_price, min_rooms, postcodes: [], areas: [{ lat, lng, radius_m, label? }], polygons: [{ points: [[lat, lng], …] }], commute: { label, lat, lng, max_min } \| null, exclude_flags: [FlagType], min_deal }] }` | `{ id }`. With `password` (8+ chars) it also signs you in (sets the cookie). `409` if the email already has a password and you aren't signed in as it |
 | `GET /api/me` | `{ user: { id, email, name, searches, favourites: [listing_id] } }`, or `401` if not signed in |
 | `POST /api/favourites/:id` / `DELETE /api/favourites/:id` | `{ favourites: [listing_id] }` (signed in; max 200). When a favourited listing's price drops, its savers are emailed once per new price. Favouriting also gives the flat its own listing monitor (saved flats go first, within `LISTING_MONITOR_MAX`) |
 | `POST /api/session` `{ email, password }` | `{ user }` and sets the session cookie, or `401 { error }` |
 | `DELETE /api/session` | `{ ok: true }` and clears the cookie |
+| `POST /api/search/parse` `{ text }` | `{ search, summary, notes: [string], via: "gemini" \| "rules" }`: a draft search from free text, not saved (signed in only) |
+| `GET /api/geocode?q=` | `{ items: [{ label, lat, lng }] }` in the Helsinki region (Digitransit, else OpenStreetMap) |
+| `GET /api/listings/:id/commute?lat=&lng=` | `{ min, src: "hsl" \| "estimate", at }`: cached HSL time, else asks the planner (and caches), else the estimate |
 | `POST /mock/publish` `{ preset?: "kallio-2h", photos?: ["https://res.cloudinary.com/…"] }` | `{ listing_id }` and starts the demo flow. `/mock` has a Cloudinary Upload Widget panel that calls this with photos |
 | `GET /api/listings/:id/card` | `302` to a 1200×630 Cloudinary share card (photo + deal band), `404` if no photos. Also used in the alert email |
 | `POST /admin/photos` `{ id }` or `{ limit }` | `202 { started: [ids] }`: re-runs the Cloudinary photo pass |
 | `GET /api/health` | `{ ok, monitors, last_webhook_at, credits_remaining }` |
 | `GET /stream` | Server-Sent Events, see §5 |
 
-**Search places:** `postcodes` and `areas` (map circles, radius 200 m – 20 km, ≤ 5) are alternatives: with either set, a listing must be in one postcode OR inside one circle (`inPlaces` in `lib/alerts` and `web/src/lib/match.ts`). Listings without `loc` never match a circle. The server cleans searches on save (`cleanSearch` in `server.mjs`).
+**Search places:** `postcodes`, `areas` (map circles, radius 200 m – 20 km, ≤ 5) and `polygons` (drawn freehand, 3–100 points, ≤ 3) are alternatives: with any set, a listing must be in one postcode OR inside one circle OR inside one polygon (`inPlaces` in `lib/alerts` and `web/src/lib/match.ts`). Listings without `loc` never match a circle or polygon. The server cleans searches on save (`cleanSearch` in `server.mjs`).
+
+**Commute:** `commute.max_min` (5–120) is the most minutes by public transport, leaving 08:00 on a weekday. The time is the listing's cached `commutes.<key>` (HSL journey planner), else `8 + 2.6 × straight-line km` (same formula in `lib/geo.mjs` and `web/src/lib/match.ts`). Alerts fetch planner times before matching; saving a commute search backfills the newest 300 listings of that kind in the background. Both need `DIGITRANSIT_KEY`; without it everything uses the estimate.
+
+**Hidden-cost exclusions:** `exclude_flags` drops a listing with any finished (`status: ok`), non-`info` flag of those types. Allowed: `pipe_renovation`, `facade_balcony`, `renovation_upcoming`, `company_loan`, `leased_plot`, `high_fee`, `street_works`.
 
 **Sign-in** uses an httpOnly `fr_session` cookie on the same origin (30 days, `SameSite=Lax`, `Secure` when `PUBLIC_URL` is https). The web app doesn't touch the cookie: plain `fetch('/api/…')` sends it automatically. On load, call `GET /api/me` to find out who is signed in.
 

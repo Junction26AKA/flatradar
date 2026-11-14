@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnalystPanel } from '../components/AnalystPanel';
+import { CommutePanel, PortalCompare } from '../components/DetailExtras';
 import { FavButton } from '../components/FavButton';
 import { ListingPhotos } from '../components/ListingPhotos';
 import { getListing } from '../lib/api';
@@ -51,14 +52,10 @@ export default function ListingDetail() {
         <p className="t-num-m">{t('detail.fair', { price: eur(l.score.fair_price), pct: Math.round(l.score.deal_pct * 1000) / 10 })}</p>
       )}
       {l.flags.length > 0 && <div className="lcard__flags">{sortFlags(l.flags).map((f) => <FlagChip key={f.id + f.status} flag={f} />)}</div>}
-      {l.also_on && Object.keys(l.also_on).length > 0 && (
-        <p className="t-body-s muted">
-          {t('detail.alsoOn')}{' '}
-          {Object.entries(l.also_on).map(([p, x], i) => x && <span key={p}>{i > 0 && ' · '}<a href={x.url} target="_blank" rel="noreferrer">{p[0].toUpperCase() + p.slice(1)}{x.price ? ` (${eur(x.price)})` : ''}</a></span>)}
-        </p>
-      )}
     </div>
     <ListingPhotos listing={l} />
+    <CommutePanel listing={l} />
+    <PortalCompare listing={l} />
     <AnalystPanel listing={l} lang={lang} />
     </>
   );
