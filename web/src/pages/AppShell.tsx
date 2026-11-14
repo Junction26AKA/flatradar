@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Logo } from '../components/Logo';
-import { LiveDot } from '../components/LiveDot';
 import { useAuth } from '../lib/auth';
 import { LangSwitch, useI18n } from '../lib/i18n';
 import { FeedProvider } from '../lib/store';
 import type { Kind } from '../lib/types';
 import './app.css';
 
-/** Signed-in layout: top bar (brand, live status, Buy/Rent, Feed / My searches, account menu) + routed content. */
+/** Signed-in layout: top bar (brand, Buy/Rent, Feed / My searches, account menu) + routed content. */
 export default function AppShell() {
   const [params, setParams] = useSearchParams();
   const { t } = useI18n();
@@ -33,7 +32,6 @@ export default function AppShell() {
           <Logo size={30} />
           <span className="t-h4">FlatRadar</span>
         </Link>
-        <LiveDot onDark />
         <div className="seg" role="tablist" aria-label={t('kind.buyOrRent')}>
           {(['sale', 'rent'] as const).map((k) => (
             <button key={k} role="tab" aria-selected={!onSearches && kind === k} className="seg__btn t-label" onClick={() => setKind(k)}>
