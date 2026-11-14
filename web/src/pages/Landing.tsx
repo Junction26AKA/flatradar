@@ -8,7 +8,7 @@ import { FlagChip, sortFlags } from '../components/FlagChip';
 import { ListingCard } from '../components/ListingCard';
 import { Logo } from '../components/Logo';
 import { LiveDot } from '../components/LiveDot';
-import { ANCHOR, CHAPTERS, COINS, OVERLAY, chapterAt, ramp, type Chapter } from '../fx/chapters';
+import { ANCHOR, CHAPTERS, COINS, OVERLAY, chapterAt, ramp, toScroll, toStory, type Chapter } from '../fx/chapters';
 import { CoinRain, coinBurst, pourTarget } from '../fx/CoinRain';
 import { House2D } from '../fx/House2D';
 import { Odometer } from '../fx/Odometer';
@@ -21,7 +21,7 @@ import './landing.css';
 const Scene3D = lazy(() => import('../fx/Scene3D'));
 
 /** Scroll length of the whole story, in viewport heights. */
-const STORY_VH = 720;
+const STORY_VH = 840;
 
 function useEnv() {
   const get = () => {
@@ -41,16 +41,18 @@ function useEnv() {
   return env;
 }
 
-/** Scroll the window to a given story progress (nav links jump to chapters). */
-function scrollToProgress(root: HTMLElement | null, p: number) {
+/** Scroll the window to a given point in story time (nav links jump to chapters). */
+function scrollToProgress(root: HTMLElement | null, storyP: number) {
   if (!root) return;
-  const top = root.offsetTop + p * (root.offsetHeight - window.innerHeight);
+  const top = root.offsetTop + toScroll(storyP) * (root.offsetHeight - window.innerHeight);
   window.scrollTo({ top, behavior: 'smooth' });
 }
 
 export default function Landing() {
   const root = useRef<HTMLDivElement>(null);
-  const { scrollYProgress, scrollY } = useScroll({ target: root, offset: ['start start', 'end end'] });
+  const { scrollYProgress: scrollP, scrollY } = useScroll({ target: root, offset: ['start start', 'end end'] });
+  // Everything downstream runs on story time (see SCROLL_TO_STORY): same scroll, but some moments hold longer.
+  const scrollYProgress = useTransform(scrollP, toStory);
   const velocity = useVelocity(scrollY);
   const env = useEnv();
   const data = useLandingData();

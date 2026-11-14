@@ -93,4 +93,36 @@ export const ANCHOR: Record<'price' | 'pricing' | 'live', number> = {
   live: 0.86, // camera fully top-down and mini map up (0.84–0.9)
 };
 
+/**
+ * Scroll position → story time. Every timing in this file is in story time; the page maps the raw scroll
+ * progress through this first. It's how a moment gets more (or less) scroll distance without retiming
+ * everything else. Piecewise-linear, monotonic, so it inverts cleanly for the nav jumps.
+ *
+ * The live chapter used to get ~0.2 screens of scrolling once the camera had settled (it spends most of its
+ * range tilting down), so a single trackpad flick skipped it. Now its settled view (story 0.84–0.885) holds
+ * for 0.18 of the scroll (≈1.3 screens at STORY_VH = 840).
+ */
+export const SCROLL_TO_STORY: [number, number][] = [
+  [0, 0],
+  [0.12, 0.15], // hero
+  [0.27, 0.35], // price tag
+  [0.42, 0.55], // hidden costs
+  [0.56, 0.75], // how we price
+  [0.65, 0.84], // live: camera tilts down, mini map pops up
+  [0.83, 0.885], // live: settled view holds (map + ticker readable)
+  [0.87, 0.9], // live text fades out
+  [1, 1], // CTA
+];
+
+function lerpKeys(keys: [number, number][], x: number, from: 0 | 1, to: 0 | 1): number {
+  if (x <= keys[0][from]) return keys[0][to];
+  for (let i = 1; i < keys.length; i++) {
+    const a = keys[i - 1], b = keys[i];
+    if (x <= b[from]) return a[to] + ((x - a[from]) / (b[from] - a[from] || 1)) * (b[to] - a[to]);
+  }
+  return keys[keys.length - 1][to];
+}
+export const toStory = (scroll: number) => lerpKeys(SCROLL_TO_STORY, scroll, 0, 1);
+export const toScroll = (story: number) => lerpKeys(SCROLL_TO_STORY, story, 1, 0);
+
 export const chapterAt = (p: number) => CHAPTERS.find((c) => p >= c.from && p < c.to) ?? CHAPTERS[CHAPTERS.length - 1];
