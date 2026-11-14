@@ -168,7 +168,8 @@ Fair value blends the model with the median of nearby comparable listings. If a 
 | Context.dev scrape (PDF parser) | Renovation plans and loans from attachments | `lib/flags/documents.mjs` |
 | City of Helsinki permit register (WFS open data) | Significant street works and traffic diversions within 150 m of the flat | `lib/flags/streetworks.mjs` |
 | Context.dev scrape, Oikotie page 1 every 10 min | Oikotie renders its results client-side and monitor page targets can't wait for that, so the server polls it (`POLL_MINUTES`) | `lib/monitors.mjs` (`pollUnmonitored`) |
-| Context.dev scrape, search pages 2–12 (hourly) | Price sweep: price drops on listings no longer on page 1 | `lib/monitors.mjs` (`sweepPrices`) |
+| Context.dev monitors, one per listing page (every 2 h, up to `LISTING_MONITOR_MAX`) | Price drops, fee changes and sold/removed on every Etuovi and Vuokraovi listing. Created when a listing is enriched, deleted when it's gone | `lib/listing-monitors.mjs` |
+| Context.dev scrape, search pages 2–12 (hourly) | Price sweep. Off by default while listing monitors are on; set `PRICE_SWEEP_MINUTES` to force it | `lib/monitors.mjs` (`sweepPrices`) |
 | Context.dev batch | Backfill hundreds of listings for training and comparables | `scripts/backfill.mjs` |
 | Gemini API | Plain-English verdict, extra hidden costs (quote-checked), questions for the agent | `lib/insight.mjs` |
 | MongoDB Atlas | Storage, `$geoNear` comparables | `lib/db.mjs`, `model/common.py` |
