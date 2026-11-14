@@ -8,10 +8,13 @@
     "setup-db": "node --env-file-if-exists=.env scripts/setup-db.mjs",
     "backfill": "node --env-file-if-exists=.env scripts/backfill.mjs",
     "enrich-all": "node --env-file-if-exists=.env scripts/enrich-all.mjs",
-    "insight-all": "node --env-file-if-exists=.env scripts/insight-all.mjs"
+    "insight-all": "node --env-file-if-exists=.env scripts/insight-all.mjs",
+    "cloudinary-setup": "node --env-file-if-exists=.env scripts/cloudinary-setup.mjs",
+    "backfill-photos": "node --env-file-if-exists=.env scripts/backfill-photos.mjs"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "cloudinary": "^2.11.0",
     "context.dev": "^3.29.0",
     "mongodb": "^7.9.0",
     "p-limit": "^7.3.3"

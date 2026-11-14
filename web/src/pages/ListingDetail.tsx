@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnalystPanel } from '../components/AnalystPanel';
+import { ListingPhotos } from '../components/ListingPhotos';
 import { getListing } from '../lib/api';
 import { flagLabel } from '../lib/flagText';
 import { dealLabel, eur, factsLine } from '../lib/format';
@@ -38,6 +39,7 @@ export default function ListingDetail() {
       <p className="t-body-s">{l.flags.map((f) => flagLabel(f) + (f.status === 'error' ? ` (${t('flag.failed')})` : f.status === 'pending' ? ` ${t('flag.checking')}` : '')).join(' · ') || t('detail.noFlags')}</p>
       <p className="t-num-s muted">{t('detail.calls', { n: callRows.filter((c) => !c.endpoint.startsWith('gemini')).length })}</p>
     </div>
+    <ListingPhotos listing={l} />
     <AnalystPanel listing={l} lang={lang} />
     </>
   );

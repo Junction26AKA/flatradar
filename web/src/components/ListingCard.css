@@ -40,3 +40,10 @@
 @keyframes card-in { from { transform: translateY(-24px) scale(0.98); opacity: 0; } }
 @keyframes glow-fade { from { box-shadow: var(--glow); } to { box-shadow: var(--shadow-card); } }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Cover photo from Cloudinary (smart crop, f_auto/q_auto, blurred placeholder while it loads). */
+.lcard__photo {
+  display: block; width: calc(100% + 40px); max-width: none; height: auto; aspect-ratio: 2 / 1; object-fit: cover;
+  margin: calc(-1 * var(--space-4)) -20px var(--space-1); border-radius: 15px 15px 0 0; background: var(--bg-subtle);
+}
+.lcard--selected .lcard__photo { width: calc(100% + 38px); margin: calc(-1 * var(--space-4) + 1px) -19px var(--space-1); border-radius: 14px 14px 0 0; }
