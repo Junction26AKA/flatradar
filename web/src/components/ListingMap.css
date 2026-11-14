@@ -1,0 +1,56 @@
+.lmap { width: 100%; height: 100%; border-radius: 16px; background: var(--bg-subtle); font-family: var(--font-body); }
+.lmap .leaflet-control-attribution { font-size: 10px; background: rgb(255 255 255 / 0.8); }
+/* Quiet the colourful OSM style so the deal pins carry the colour: desaturate, then a cool blue cast. */
+.lmap .leaflet-tile-pane { filter: grayscale(1) sepia(0.25) hue-rotate(180deg) saturate(1.6) brightness(1.06) contrast(0.92); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .lmap .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(0.3) hue-rotate(180deg) saturate(2) brightness(0.75) contrast(0.9); }
+}
+
+/* DivIcon wrapper: Leaflet gives it a fixed box; we centre the pill on the point ourselves. */
+.pin-wrap { background: none; border: 0; width: 0 !important; height: 0 !important; }
+.pin {
+  position: absolute; transform: translate(-50%, -50%);
+  display: inline-block; padding: 2px 7px; border-radius: var(--radius-full);
+  font: 600 11px/14px var(--font-mono); white-space: nowrap; cursor: pointer;
+  color: #fff; background: var(--bg-brand); border: 2px solid #fff; box-shadow: 0 2px 6px rgb(0 47 108 / 0.25);
+  transition: transform 0.15s var(--ease-out);
+}
+.pin--good { background: var(--deal-good); }
+.pin--bad { background: var(--deal-bad); }
+.pin--none { width: 14px; height: 14px; padding: 0; font-size: 0; background: var(--text-muted); }
+.pin--hover { transform: translate(-50%, -50%) scale(1.25); }
+.pin--selected { transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 0 3px var(--coin-face), var(--glow-deal); }
+.pin--fresh { animation: pin-drop 0.7s var(--ease-out); }
+
+/* Cluster bubble: Finnish-blue disc with the count; ring colour = best deal inside. */
+.cluster {
+  --ring: var(--text-muted);
+  position: absolute; transform: translate(-50%, -50%);
+  display: grid; place-items: center; align-content: center; gap: 0;
+  border-radius: 50%; cursor: pointer; text-align: center;
+  background: var(--bg-brand); color: #fff;
+  border: 3px solid #fff; box-shadow: 0 0 0 3px var(--ring), 0 4px 10px rgb(0 47 108 / 0.3);
+  transition: transform 0.15s var(--ease-out);
+}
+.cluster b { font: 700 14px/1 var(--font-display); }
+/* Best deal inside the bubble, as a small tab hanging off the bottom (never clipped by the disc). */
+.cluster small {
+  position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%);
+  padding: 1px 6px; border-radius: var(--radius-full); white-space: nowrap;
+  font: 600 10px/14px var(--font-mono); color: #fff; background: var(--ring); border: 1.5px solid #fff;
+}
+.cluster--fair small, .cluster--none small { color: #002F6C; }
+.cluster--s { width: 38px; height: 38px; }
+.cluster--m { width: 46px; height: 46px; }
+.cluster--m b { font-size: 16px; }
+.cluster--l { width: 56px; height: 56px; }
+.cluster--l b { font-size: 18px; }
+.cluster--good { --ring: var(--deal-good); }
+.cluster--bad { --ring: var(--deal-bad); }
+.cluster--fair { --ring: var(--coin-face); }
+.cluster:hover, .cluster--hover { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 0 0 3px var(--ring), 0 0 0 7px var(--coin-face), 0 4px 10px rgb(0 47 108 / 0.3); }
+@keyframes pin-drop {
+  0% { transform: translate(-50%, -260%) scale(0.6); opacity: 0; }
+  60% { transform: translate(-50%, -40%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}

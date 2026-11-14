@@ -87,15 +87,16 @@ function reducer(s: FeedState, a: Action): FeedState {
 const Ctx = createContext<FeedState | null>(null);
 
 /** Holds every listing we know about: the initial GET /api/listings plus everything from /stream. */
-export function FeedProvider({ children, kind }: { children: ReactNode; kind?: Kind }) {
+export function FeedProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial);
   useEffect(() => {
+    // Fetch each kind separately: rentals far outnumber sales, so one mixed "newest 100" would hide the sales.
     const ac = new AbortController();
-    getListings(kind, 100, ac.signal)
-      .then((r) => dispatch({ type: 'loaded', items: r.data, source: r.source }))
+    Promise.all((['sale', 'rent'] as const).map((k) => getListings(k, 150, ac.signal)))
+      .then(([s, r]) => dispatch({ type: 'loaded', items: [...s.data, ...r.data], source: s.source === 'live' || r.source === 'live' ? 'live' : 'fixtures' }))
       .catch(() => {});
     return () => ac.abort();
-  }, [kind]);
+  }, []);
   useStream((event) => dispatch({ type: 'event', event }));
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 }

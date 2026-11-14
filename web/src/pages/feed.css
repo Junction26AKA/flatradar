@@ -1,0 +1,67 @@
+/* Desktop: list | map | detail drawer (Figma "/app — Feed · Map · Detail") */
+.feed {
+  --bar: 64px;
+  display: grid; grid-template-columns: minmax(340px, 420px) minmax(0, 1fr); gap: var(--space-6);
+  height: calc(100dvh - var(--bar) - 2 * var(--space-6));
+}
+.feed--detail { grid-template-columns: minmax(340px, 420px) minmax(0, 1fr) minmax(360px, 432px); }
+
+.feed__list { overflow-y: auto; overscroll-behavior: contain; padding: 2px 6px var(--space-8) 2px; margin: -2px -6px 0 -2px; scrollbar-width: thin; }
+.feed__head { position: sticky; top: 0; z-index: 2; display: grid; gap: var(--space-3); padding-bottom: var(--space-4); background: var(--bg-page); }
+.feed__head h1 { display: flex; align-items: baseline; gap: 10px; }
+.feed__filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.feed__maptoggle { display: none; }
+.feed__note { margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px dashed var(--border); background: var(--bg-subtle); }
+.feed__toast {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 0; padding: 6px 14px 6px 8px; border-radius: var(--radius-full);
+  background: var(--deal-good); color: var(--text-inverse); box-shadow: var(--glow-deal);
+  animation: toast-in 0.5s var(--ease-out);
+}
+@keyframes toast-in { from { transform: translateY(-8px) scale(0.95); opacity: 0; } }
+
+.feed__cards { display: grid; gap: 14px; }
+.feed__more { margin-top: var(--space-4); width: 100%; padding: 10px; border-radius: var(--radius-md); border: 1px dashed var(--border-brand); background: none; color: var(--text-primary); cursor: pointer; }
+.feed__empty { padding: var(--space-8) 0; text-align: center; }
+.feed__skel { display: grid; gap: 14px; }
+.feed__skel span {
+  height: 168px; border-radius: 16px;
+  background: linear-gradient(90deg, var(--bg-surface) 0%, var(--bg-subtle) 50%, var(--bg-surface) 100%) 0 0 / 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.feed__map { position: relative; min-height: 0; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-card); }
+.feed__mapload { height: 100%; background: var(--bg-subtle); }
+
+.feed__detail {
+  position: relative; overflow-y: auto; border-radius: 16px; padding: var(--space-6);
+  background: var(--bg-surface); box-shadow: var(--shadow-float);
+  animation: drawer-in 0.35s var(--ease-out);
+}
+.feed__close {
+  position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%;
+  border: 0; background: var(--bg-subtle); color: var(--text-primary); font-size: 20px; line-height: 1; cursor: pointer;
+}
+@keyframes drawer-in { from { transform: translateX(24px); opacity: 0; } }
+
+/* Narrower desktops: the drawer covers the map instead of squeezing three columns. */
+@media (max-width: 1180px) {
+  .feed--detail { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); }
+  .feed__detail { position: absolute; right: var(--space-6); top: calc(var(--bar) + var(--space-6)); bottom: var(--space-6); width: min(432px, 50vw); z-index: 500; }
+}
+
+/* Mobile: one column; map is a toggle; detail is a bottom sheet. */
+@media (max-width: 760px) {
+  .feed, .feed--detail { display: flex; flex-direction: column; height: auto; }
+  .feed__map { order: -1; } /* map (when toggled on) sits above the list, not after 150 cards */
+  .feed__list { overflow: visible; margin: 0; padding: 0 0 var(--space-8); }
+  .feed__head { top: 0; }
+  .feed__maptoggle { display: inline-block; }
+  .feed__map { display: none; height: 60dvh; margin-bottom: var(--space-4); }
+  .feed--map-open .feed__map { display: block; position: sticky; top: 0; z-index: 3; }
+  .feed__detail {
+    position: fixed; inset: auto 0 0 0; top: auto; width: auto; max-height: 82dvh; z-index: 1000;
+    border-radius: 20px 20px 0 0; animation: sheet-in 0.35s var(--ease-out);
+  }
+  @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
+}
