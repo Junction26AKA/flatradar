@@ -47,3 +47,8 @@
   margin: calc(-1 * var(--space-4)) -20px var(--space-1); border-radius: 15px 15px 0 0; background: var(--bg-subtle);
 }
 .lcard--selected .lcard__photo { width: calc(100% + 38px); margin: calc(-1 * var(--space-4) + 1px) -19px var(--space-1); border-radius: 14px 14px 0 0; }
+
+/* The per-listing monitor saw the ad disappear (sold / rented / taken down). Kept visible, e.g. under Saved. */
+.lcard--removed > :not(.lcard__price) { opacity: 0.6; }
+.lcard--removed .lcard__price .t-num-l { text-decoration: line-through; opacity: 0.6; }
+.lcard__removed { padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); }

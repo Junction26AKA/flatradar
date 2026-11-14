@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { Coin } from '../components/Coin';
+import { FavButton } from '../components/FavButton';
 import { ListingCard } from '../components/ListingCard';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { dealLabel, shortDistrict } from '../lib/format';
 import { matchesAny } from '../lib/match';
-import { useFeed, useListings } from '../lib/store';
+import { useEnsureListings, useFeed, useListings } from '../lib/store';
 import type { Kind, Listing } from '../lib/types';
 import { useNow } from '../lib/useNow';
 import './feed.css';
@@ -14,7 +15,7 @@ import './feed.css';
 const ListingMap = lazy(() => import('../components/ListingMap'));
 const PAGE = 40;
 
-type Filter = 'good' | 'match';
+type Filter = 'good' | 'match' | 'saved';
 
 /** /app and /app/l/:id: feed | map | (detail drawer when a listing is open). */
 export default function Feed() {
@@ -28,20 +29,27 @@ export default function Feed() {
   const now = useNow();
   const [params] = useSearchParams();
   // ?match=1 (from My searches → "See matches") starts with the "Matches my search" filter on.
-  const [filters, setFilters] = useState<Set<Filter>>(() => new Set(params.get('match') ? ['match'] : []));
+  // ?saved=1 starts with the "Saved" filter on.
+  const [filters, setFilters] = useState<Set<Filter>>(() => new Set([...(params.get('match') ? ['match' as const] : []), ...(params.get('saved') ? ['saved' as const] : [])]));
   const [limit, setLimit] = useState(PAGE);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false); // mobile only
   const listRef = useRef<HTMLDivElement>(null);
 
   const searches = user?.searches;
+  const favourites = user?.favourites;
+  useEnsureListings(favourites);
+  const favSet = useMemo(() => new Set(favourites ?? []), [favourites]);
+  const savedHere = useMemo(() => all.filter((l) => favSet.has(l._id)).length, [all, favSet]);
+  const areas = useMemo(() => (searches ?? []).filter((s) => s.kind === kind).flatMap((s) => s.areas ?? []), [searches, kind]);
   const listings = useMemo(
     () =>
       all.filter((l) =>
         (!filters.has('good') || (l.score && l.score.deal_pct <= -0.03)) &&
-        (!filters.has('match') || matchesAny(l, searches)),
+        (!filters.has('match') || matchesAny(l, searches)) &&
+        (!filters.has('saved') || favSet.has(l._id)),
       ),
-    [all, filters, searches],
+    [all, filters, searches, favSet],
   );
   const toggle = (f: Filter) => setFilters((s) => { const n = new Set(s); if (n.has(f)) n.delete(f); else n.add(f); return n; });
   const link = (id: string) => `/app/l/${encodeURIComponent(id)}?kind=${kind}`;
@@ -64,6 +72,7 @@ export default function Feed() {
           <div className="feed__filters" role="group" aria-label={t('feed.filters')}>
             <button className="fchip" aria-pressed={filters.has('good')} onClick={() => toggle('good')}>{t('feed.good')}</button>
             {!!searches?.length && <button className="fchip" aria-pressed={filters.has('match')} onClick={() => toggle('match')}>{t('feed.match')}</button>}
+            {user && <button className="fchip" aria-pressed={filters.has('saved')} onClick={() => toggle('saved')}>{t('feed.saved', { n: savedHere })}</button>}
             <button className="fchip feed__maptoggle" aria-pressed={showMap} onClick={() => setShowMap((v) => !v)}>{t('feed.map')}</button>
           </div>
           {source === 'fixtures' && <p className="feed__note t-body-s">{t('feed.sample')}</p>}
@@ -77,13 +86,13 @@ export default function Feed() {
         {loading && !all.length && <div className="feed__skel" aria-busy="true">{[0, 1, 2].map((i) => <span key={i} />)}</div>}
         {!loading && !listings.length && (
           <p className="feed__empty muted">
-            {all.length ? t('feed.noMatch') : t(kind === 'rent' ? 'feed.emptyRent' : 'feed.emptySale')}
+            {filters.has('saved') && !savedHere ? t('feed.noSaved') : all.length ? t('feed.noMatch') : t(kind === 'rent' ? 'feed.emptyRent' : 'feed.emptySale')}
           </p>
         )}
 
         <div className="feed__cards">
           {listings.slice(0, limit).map((l) => (
-            <div key={l._id} data-id={l._id}>
+            <div key={l._id} data-id={l._id} className={`feed__item${user ? ' feed__item--fav' : ''}`}>
               <ListingCard
                 listing={l}
                 now={now}
@@ -94,6 +103,7 @@ export default function Feed() {
                 priceChange={priceChanges[l._id]}
                 onHover={setHoverId}
               />
+              <FavButton id={l._id} />
             </div>
           ))}
         </div>
@@ -106,7 +116,7 @@ export default function Feed() {
 
       <section className="feed__map" aria-label={t('feed.mapLabel')}>
         <Suspense fallback={<div className="feed__mapload" />}>
-          <ListingMap listings={listings} selectedId={selectedId} hoverId={hoverId} freshIds={fresh} onSelect={open} />
+          <ListingMap listings={listings} selectedId={selectedId} hoverId={hoverId} freshIds={fresh} onSelect={open} areas={areas} />
         </Suspense>
       </section>
 

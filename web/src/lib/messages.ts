@@ -40,6 +40,8 @@ export const MESSAGES = {
   'card.fair': { en: 'fair', fi: 'käypä' },
   'card.lowConfidence': { en: 'low confidence', fi: 'epävarma arvio' },
   'card.matches': { en: 'Matches your search', fi: 'Vastaa hakuasi' },
+  'card.removed': { en: 'Sold or removed', fi: 'Myyty tai poistettu' },
+  'card.removedTitle': { en: 'The ad is no longer on the portal', fi: 'Ilmoitus ei ole enää portaalissa' },
   'card.roomsOriginal': { en: (v: { s: string }) => `Original listing: ${v.s}`, fi: (v: { s: string }) => v.s },
   'flag.checking': { en: '(checking)', fi: '(tarkistetaan)' },
   'flag.failed': { en: 'This check failed', fi: 'Tarkistus epäonnistui' },
@@ -262,6 +264,22 @@ export const MESSAGES = {
   'sr.saving': { en: 'Saving…', fi: 'Tallennetaan…' },
   'sr.save': { en: 'Save search', fi: 'Tallenna haku' },
   'sr.cancel': { en: 'Cancel', fi: 'Peruuta' },
+  'sr.areas': { en: 'Or draw areas on the map', fi: 'Tai valitse alueita kartalta' },
+  'sr.areasHint': { en: 'Click the map to drop a pin, then set how far around it to look. A listing in any postcode or any circle matches.', fi: 'Pudota nasta klikkaamalla karttaa ja valitse säde. Ilmoitus osuu, jos se on jollakin postinumerolla tai jonkin ympyrän sisällä.' },
+  'sr.radius': { en: (v: { km: string }) => `Radius ${v.km} km`, fi: (v: { km: string }) => `Säde ${v.km} km` },
+  'sr.areaChip': { en: (v: { km: string }) => `◎ ${v.km} km circle`, fi: (v: { km: string }) => `◎ ${v.km} km ympyrä` },
+  'sr.removeArea': { en: 'Remove area', fi: 'Poista alue' },
+  'sr.maxAreas': { en: (v: { n: number }) => `Up to ${v.n} areas per search`, fi: (v: { n: number }) => `Enintään ${v.n} aluetta hakua kohden` },
+  'sr.areaN': { en: (v: { n: number }) => `Area ${v.n}`, fi: (v: { n: number }) => `Alue ${v.n}` },
+
+  // ---- favourites
+  'fav.add': { en: 'Save this flat. We’ll email you if its price drops.', fi: 'Tallenna asunto. Lähetämme sähköpostia, jos hinta laskee.' },
+  'fav.remove': { en: 'Remove from saved', fi: 'Poista tallennetuista' },
+  'fav.save': { en: 'Save', fi: 'Tallenna' },
+  'fav.saved': { en: 'Saved', fi: 'Tallennettu' },
+  'fav.error': { en: 'Couldn’t update your saved flats', fi: 'Tallennettujen asuntojen päivitys epäonnistui' },
+  'feed.saved': { en: (v: { n: number }) => `♥ Saved${v.n ? ` (${v.n})` : ''}`, fi: (v: { n: number }) => `♥ Tallennetut${v.n ? ` (${v.n})` : ''}` },
+  'feed.noSaved': { en: 'Nothing saved yet. Tap ♡ on a listing to keep it here and get price-drop alerts.', fi: 'Ei vielä tallennettuja. Napauta ♡ ilmoituksessa, niin se jää tänne ja saat hälytyksen hinnan laskusta.' },
 
   // ---- errors from the server / network (lib/api.ts, server.mjs)
   'srv.wrongPassword': { en: 'Wrong email or password.', fi: 'Väärä sähköposti tai salasana.' },

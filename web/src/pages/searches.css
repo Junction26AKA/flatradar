@@ -29,6 +29,9 @@
 .scard--form input:focus, .scard--form select:focus { outline: none; border-color: var(--border-brand); }
 .scard--form input[aria-invalid='true'] { border-color: var(--deal-bad); }
 .sform__err { color: var(--deal-bad); font-weight: 400; }
+.sform__areas { display: grid; gap: 6px; }
+.sform__label { font: 600 13px/16px var(--font-body); }
+.scard__code--area { border-style: dashed; border-color: var(--border-brand); }
 .sform__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .sform__seg { display: inline-flex; justify-self: start; padding: 3px; border-radius: 10px; background: var(--bg-subtle); border: 1px solid var(--border); }
 .sform__segbtn { border: 0; background: none; cursor: pointer; padding: 6px 20px; border-radius: 8px; color: var(--text-primary); }

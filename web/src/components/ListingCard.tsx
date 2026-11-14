@@ -40,7 +40,7 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
   return (
     <Link
       to={to}
-      className={['lcard', compact && 'lcard--compact', fresh && 'lcard--fresh', fresh && good && 'lcard--fresh-good', selected && 'lcard--selected', matches && 'lcard--match'].filter(Boolean).join(' ')}
+      className={['lcard', compact && 'lcard--compact', fresh && 'lcard--fresh', fresh && good && 'lcard--fresh-good', selected && 'lcard--selected', matches && 'lcard--match', l.removed_at && 'lcard--removed'].filter(Boolean).join(' ')}
       aria-current={selected ? 'true' : undefined}
       onMouseEnter={onHover && (() => onHover(l._id))}
       onMouseLeave={onHover && (() => onHover(null))}
@@ -80,6 +80,7 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
           <span className="t-num-s lcard__noscore" title={t('card.noScoreTitle')}>{t('card.noScore')}</span>
         )}
         {priceChange && <PriceChangeBadge oldPrice={priceChange.old_price} newPrice={priceChange.new_price} />}
+        {l.removed_at && <span className="lcard__removed t-num-s" title={t('card.removedTitle')}>{t('card.removed')}</span>}
       </div>
 
       <p className="t-num-s lcard__perm2">

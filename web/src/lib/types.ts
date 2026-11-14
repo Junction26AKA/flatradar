@@ -156,6 +156,8 @@ export interface Listing {
   also_on?: Partial<Record<Portal, { id: string; url: string; price: number | null; seen_at: string }>>;
   /** the latest search-card price drop (set by the diff), so the badge survives a reload */
   last_price_drop?: { old_price: number; new_price: number; at: string } | null;
+  /** set by the per-listing monitor when the ad is gone (sold, rented or taken down) */
+  removed_at?: string | null;
   score: Score | null;
   flags: Flag[];
   insight?: Insight | null;
@@ -187,11 +189,20 @@ export interface ListingDetail extends Listing {
   calls: CallEnd[];
 }
 
+/** A circle dropped on the map in a saved search. */
+export interface SearchArea {
+  lat: number;
+  lng: number;
+  radius_m: number;
+}
+
 export interface SavedSearch {
   kind: Kind;
   max_price: number | null;
   min_rooms: number | null;
   postcodes: string[];
+  /** Map circles. Postcodes and areas are alternatives: a listing in any postcode OR inside any circle matches. */
+  areas?: SearchArea[];
   /** e.g. -0.10 = alert when at least 10% below fair */
   min_deal: number | null;
 }

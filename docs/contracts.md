@@ -33,6 +33,7 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
   "photos": ["https://…jpg"],         // gallery photo URLs from the extraction (null = not extracted yet)
   "media": Media | null,              // §1b, filled in by lib/media (Cloudinary) a few seconds after `ready`
   "first_seen_at": "ISO date", "last_seen_at": "ISO date",
+  "removed_at": "ISO date" | null,  // set by the per-listing monitor (lib/listing-monitors) when the ad is gone
   "price_history": [{ "at": "ISO date", "price": 329000, "debt_free_price": 329000, "rent": null }],
   "score": Score | null,              // §2, filled in by Kevin's /score
   "flags": [Flag],                    // §3, filled in by Adam's enrichment; grows as calls return
@@ -128,8 +129,9 @@ The model never produces a number:
 |---|---|
 | `GET /api/listings?kind=sale\|rent&limit=50` | `{ items: [listing] }`, newest `first_seen_at` first |
 | `GET /api/listings/:id` | `listing` + `calls: [CallEnd]` (the fan-out of its last enrichment) |
-| `POST /api/users` `{ email, name, password?, searches: [{ kind, max_price, min_rooms, postcodes: [], min_deal }] }` | `{ id }`. With `password` (8+ chars) it also signs you in (sets the cookie). `409` if the email already has a password and you aren't signed in as it |
-| `GET /api/me` | `{ user: { id, email, name, searches } }`, or `401` if not signed in |
+| `POST /api/users` `{ email, name, password?, searches: [{ kind, max_price, min_rooms, postcodes: [], areas: [{ lat, lng, radius_m }], min_deal }] }` | `{ id }`. With `password` (8+ chars) it also signs you in (sets the cookie). `409` if the email already has a password and you aren't signed in as it |
+| `GET /api/me` | `{ user: { id, email, name, searches, favourites: [listing_id] } }`, or `401` if not signed in |
+| `POST /api/favourites/:id` / `DELETE /api/favourites/:id` | `{ favourites: [listing_id] }` (signed in; max 200). When a favourited listing's price drops, its savers are emailed once per new price. Favouriting also gives the flat its own listing monitor (saved flats go first, within `LISTING_MONITOR_MAX`) |
 | `POST /api/session` `{ email, password }` | `{ user }` and sets the session cookie, or `401 { error }` |
 | `DELETE /api/session` | `{ ok: true }` and clears the cookie |
 | `POST /mock/publish` `{ preset?: "kallio-2h", photos?: ["https://res.cloudinary.com/…"] }` | `{ listing_id }` and starts the demo flow. `/mock` has a Cloudinary Upload Widget panel that calls this with photos |
@@ -137,6 +139,8 @@ The model never produces a number:
 | `POST /admin/photos` `{ id }` or `{ limit }` | `202 { started: [ids] }`: re-runs the Cloudinary photo pass |
 | `GET /api/health` | `{ ok, monitors, last_webhook_at, credits_remaining }` |
 | `GET /stream` | Server-Sent Events, see §5 |
+
+**Search places:** `postcodes` and `areas` (map circles, radius 200 m – 20 km, ≤ 5) are alternatives: with either set, a listing must be in one postcode OR inside one circle (`inPlaces` in `lib/alerts` and `web/src/lib/match.ts`). Listings without `loc` never match a circle. The server cleans searches on save (`cleanSearch` in `server.mjs`).
 
 **Sign-in** uses an httpOnly `fr_session` cookie on the same origin (30 days, `SameSite=Lax`, `Secure` when `PUBLIC_URL` is https). The web app doesn't touch the cookie: plain `fetch('/api/…')` sends it automatically. On load, call `GET /api/me` to find out who is signed in.
 

@@ -21,6 +21,12 @@
 @keyframes toast-in { from { transform: translateY(-8px) scale(0.95); opacity: 0; } }
 
 .feed__cards { display: grid; gap: 14px; }
+.feed__item { position: relative; }
+.feed__item > .fav { position: absolute; top: 10px; right: 10px; z-index: 2; }
+/* keep the "seen …" text clear of the heart when the card has no photo */
+.feed__item--fav .lcard__top { padding-right: 40px; }
+.feed__item--fav .lcard__photo + .lcard__top { padding-right: 0; }
+.feed__item--fav .lcard__matchtag { right: 56px; }
 .feed__more { margin-top: var(--space-4); width: 100%; padding: 10px; border-radius: var(--radius-md); border: 1px dashed var(--border-brand); background: none; color: var(--text-primary); cursor: pointer; }
 .feed__empty { padding: var(--space-8) 0; text-align: center; }
 .feed__skel { display: grid; gap: 14px; }
@@ -65,3 +71,5 @@
   }
   @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
 }
+
+.detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
