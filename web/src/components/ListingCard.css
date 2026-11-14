@@ -47,3 +47,7 @@
   margin: calc(-1 * var(--space-4)) -20px var(--space-1); border-radius: 15px 15px 0 0; background: var(--bg-subtle);
 }
 .lcard--selected .lcard__photo { width: calc(100% + 38px); margin: calc(-1 * var(--space-4) + 1px) -19px var(--space-1); border-radius: 14px 14px 0 0; }
+
+/* Sold or let: greyed out, still clickable for its history */
+.lcard--gone { opacity: 0.55; filter: grayscale(1); transition: opacity 0.4s, filter 0.4s; }
+.lcard--gone:hover, .lcard--gone:focus-visible { opacity: 0.85; }

@@ -36,11 +36,12 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
   const scoring = !score && l.status !== 'ready';
   const good = score != null && score.deal_pct <= -0.03;
   const cover = compact ? null : coverPhoto(l);
+  const gone = !!l.removed_at;
 
   return (
     <Link
       to={to}
-      className={['lcard', compact && 'lcard--compact', fresh && 'lcard--fresh', fresh && good && 'lcard--fresh-good', selected && 'lcard--selected', matches && 'lcard--match'].filter(Boolean).join(' ')}
+      className={['lcard', compact && 'lcard--compact', fresh && 'lcard--fresh', fresh && good && 'lcard--fresh-good', gone && 'lcard--gone', selected && 'lcard--selected', matches && 'lcard--match'].filter(Boolean).join(' ')}
       aria-current={selected ? 'true' : undefined}
       onMouseEnter={onHover && (() => onHover(l._id))}
       onMouseLeave={onHover && (() => onHover(null))}
@@ -78,6 +79,11 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
           <span className="lcard__scoring t-num-s">{t('card.scoring')}</span>
         ) : (
           <span className="t-num-s lcard__noscore" title={t('card.noScoreTitle')}>{t('card.noScore')}</span>
+        )}
+        {gone && (
+          <span className="sold t-label" title={t('card.soldTitle', { ago: ago(l.removed_at!, now) })}>
+            {t(l.kind === 'rent' ? 'card.let' : 'card.sold')}
+          </span>
         )}
         {priceChange && <PriceChangeBadge oldPrice={priceChange.old_price} newPrice={priceChange.new_price} />}
       </div>
