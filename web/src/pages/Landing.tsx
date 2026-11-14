@@ -84,7 +84,6 @@ export default function Landing() {
           <Logo size={36} />
           <span className="t-h4">FlatRadar</span>
         </Link>
-        <LiveDot onDark={active.ink === 'light'} />
         <div className="lp__links t-label">
           <button onClick={() => jump('price')}>{t('lp.how')}</button>
           <button onClick={() => jump('pricing')}>{t('lp.pricing')}</button>
