@@ -24,6 +24,8 @@
 .lp__cta--gold { background: var(--coin-face); color: #002F6C; box-shadow: var(--glow-coin); }
 .lp__cta--primary { background: #002F6C; color: #fff; }
 .lp__navcta { padding: 10px 20px; }
+.lp__signin { text-decoration: none; }
+.lp__signin:hover { text-decoration: underline; text-underline-offset: 6px; }
 .lp__ghost {
   display: inline-flex; align-items: center; padding: 12px 22px; border-radius: var(--radius-md);
   border: 1.5px solid currentColor; text-decoration: none; font: 600 15px var(--font-body);

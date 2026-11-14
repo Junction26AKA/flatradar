@@ -22,6 +22,8 @@ export interface User extends ApiUser {
 interface AuthValue {
   user: User | null;
   status: 'loading' | 'signed-in' | 'signed-out';
+  /** true after the user pressed Sign out (the /app guard then goes to the landing page, not /signin) */
+  signedOutByUser: boolean;
   signUp(input: { email: string; password: string; name?: string; searches: SavedSearch[] }): Promise<User>;
   signIn(email: string, password: string): Promise<User>;
   updateSearches(searches: SavedSearch[]): Promise<User>;
@@ -56,10 +58,12 @@ const Ctx = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthValue['status']>('loading');
+  const [signedOutByUser, setSignedOutByUser] = useState(false);
 
   const commit = useCallback((u: User | null) => {
     setUser(u);
     setStatus(u ? 'signed-in' : 'signed-out');
+    if (u) setSignedOutByUser(false);
     return u;
   }, []);
 
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthValue>(() => ({
     user,
     status,
+    signedOutByUser,
 
     signUp: async ({ email, password, name, searches }) => {
       const cleanName = name?.trim() || null;
@@ -121,9 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       if (user && !user.offline) await deleteSession().catch(() => {});
       writeOffline(null);
+      setSignedOutByUser(true); // same render as the status change, so the guard sees both together
       commit(null);
     },
-  }), [user, status, commit]);
+  }), [user, status, signedOutByUser, commit]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -134,11 +140,13 @@ export function useAuth(): AuthValue {
   return v;
 }
 
-/** Guards /app/*: signed-out visitors go to /signin and come back afterwards. */
+/** Guards /app/*: signed-out visitors go to /signin and come back afterwards; after Sign out, to the landing page. */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { status } = useAuth();
+  const { status, signedOutByUser } = useAuth();
   const loc = useLocation();
   if (status === 'loading') return null;
-  if (status === 'signed-out') return <Navigate to={`/signin?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
+  if (status === 'signed-out') {
+    return <Navigate to={signedOutByUser ? '/' : `/signin?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
+  }
   return <>{children}</>;
 }
