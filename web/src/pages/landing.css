@@ -80,8 +80,10 @@
 @keyframes hint { 50% { transform: translateY(5px); } }
 
 /* CTA chapter: headline sits on the flag's horizontal band */
-.lp__panel--cta { left: calc(26% + 11vw + 40px); top: calc(38% + 9vh); transform: translateY(-50%); width: min(560px, 46vw); }
-.lp__panel--cta .t-h1 { color: #fff; margin-top: -0.55em; }
+/* The band only holds one line of white text (18vh is ~106px on a 588px-tall laptop window), so the headline
+   must not wrap: span to the right gutter and keep it on one line (≈11em wide in EN and FI). */
+.lp__panel--cta { left: calc(26% + 11vw + 40px); right: var(--gutter); top: calc(38% + 9vh); transform: translateY(-50%); width: auto; }
+.lp__panel--cta .t-h1 { color: #fff; margin-top: -0.55em; white-space: nowrap; font-size: clamp(30px, 4.5vw, 56px); }
 .lp__panel--cta .lp__ctas { margin-top: calc(9vh + 36px); }
 .lp__panel--cta .lp__ghost { color: #002F6C; background: #fff; }
 
@@ -128,8 +130,9 @@
 .lp__towersub { color: #4A6FA5; max-width: 180px; }
 .lp__tower--missing { opacity: 0.45; }
 
-/* chapter 6: piggy bank */
-.lp__piggy { position: absolute; z-index: 4; right: 8%; bottom: 6%; width: min(320px, 26vw); }
+/* chapter 6: piggy bank, in the flag's empty bottom-left quadrant (left of the vertical bar, below the band),
+   clear of the CTA copy that runs right of the bar. Capped by height too so it stays below the band on short windows. */
+.lp__piggy { position: absolute; z-index: 4; left: var(--gutter); bottom: 6%; width: min(260px, calc(26vw - var(--gutter) - 24px), 36vh); }
 .piggy { position: relative; }
 .piggy svg { width: 100%; height: auto; }
 .piggy__slot { position: absolute; left: 50%; top: 22%; width: 2px; height: 2px; }
@@ -149,6 +152,14 @@
 .h2d__shadow { position: absolute; left: 6%; right: 6%; bottom: -4%; height: 8%; border-radius: 50%; background: radial-gradient(closest-side, rgb(0 47 108 / 0.28), transparent); }
 .h2d__face--back { transform: rotateY(180deg); }
 .h2d__cracks { opacity: calc(0.25 + var(--crack, 0) * 0.75); }
+
+/* short desktop windows (laptops with browser chrome): pull the live chapter up so the ticker cards
+   clear the bottom edge instead of being clipped into the coin pile */
+@media (min-width: 768px) and (max-height: 760px) {
+  .lp__panel--live { top: 88px; }
+  .lp__panel--live .lp__livepill { margin-bottom: var(--space-2); }
+  .lp__panel--live .lp__ticker { margin-top: var(--space-4); }
+}
 
 /* tablets: keep 3D, tighten overlays */
 @media (max-width: 1100px) {
@@ -192,7 +203,7 @@
   .lp__flag-h { top: 22%; height: 12vh; transform-origin: 45% 50%; }
   .lp__panel--cta .lp__sub { background: #fff; padding: 10px 12px; border-radius: 12px; }
   .lp__panel--cta { left: 16px; right: 16px; top: calc(22% + 6vh); width: auto; }
-  .lp__panel--cta .t-h1 { font-size: 26px; }
+  .lp__panel--cta .t-h1 { font-size: 26px; white-space: normal; }
   .lp__panel--cta .lp__ctas { margin-top: calc(6vh + 24px); }
   /* centred with margins: motion owns this element's transform (fade-up), so a CSS translate would be overwritten */
   .lp__piggy { right: auto; left: 50%; margin-left: -28vw; width: 56vw; bottom: 3vh; }
