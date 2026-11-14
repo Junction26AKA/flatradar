@@ -160,6 +160,14 @@
 /* phones: text on top, visuals in the lower half */
 @media (max-width: 767px) {
   .lp__nav { padding: 14px 16px; gap: 12px; }
+  /* On phones the flag's vertical bar runs under this link at the end (navy on navy): give it its own pill. */
+  .lp .lp__signin { padding: 6px 10px; border-radius: var(--radius-full); background: #fff; color: #002F6C; box-shadow: 0 0 0 1px rgb(0 47 108 / 0.15); font-size: 13px; }
+  /* keep the phone nav on one line: logo + wordmark, Sign in pill, CTA */
+  .lp__nav { gap: 8px; }
+  .lp__brand { gap: 8px; }
+  .lp__brand .t-h4 { font-size: 16px; }
+  .lp .lp__signin, .lp__navcta { white-space: nowrap; }
+  .lp__navcta { padding: 9px 14px; font-size: 14px; }
   .lp__nav .live-dot { display: none; }
   .lp__panel, .lp__panel--hero, .lp__panel--wide { left: 16px; right: 16px; width: auto; top: 76px; }
   .lp__panel--hero .t-hero { font-size: 40px; }

@@ -1,9 +1,11 @@
 .lmap { width: 100%; height: 100%; border-radius: 16px; background: var(--bg-subtle); font-family: var(--font-body); }
 .lmap .leaflet-control-attribution { font-size: 10px; background: rgb(255 255 255 / 0.8); }
-/* Quiet the colourful OSM style so the deal pins carry the colour: desaturate, then a cool blue cast. */
-.lmap .leaflet-tile-pane { filter: grayscale(1) sepia(0.25) hue-rotate(180deg) saturate(1.6) brightness(1.06) contrast(0.92); }
+/* Quiet the colourful OSM style so the deal pins carry the colour: desaturate, then a cool blue cast.
+   On the tiles themselves, not the pane: Safari/WebKit ignores a filter on the pane (its tile layers are
+   separately composited), so Mac Safari showed the full-colour map. */
+.lmap .leaflet-tile { filter: grayscale(1) sepia(0.25) hue-rotate(180deg) saturate(1.6) brightness(1.06) contrast(0.92); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .lmap .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(0.3) hue-rotate(180deg) saturate(2) brightness(0.75) contrast(0.9); }
+  :root:not([data-theme='light']) .lmap .leaflet-tile { filter: grayscale(1) invert(1) sepia(0.3) hue-rotate(180deg) saturate(2) brightness(0.75) contrast(0.9); }
 }
 
 /* DivIcon wrapper: Leaflet gives it a fixed box; we centre the pill on the point ourselves. */
