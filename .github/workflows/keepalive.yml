@@ -1,0 +1,22 @@
+# Keeps the free Render instance awake (it sleeps after 15 min without requests) and makes failures visible:
+# a red run in the Actions tab means the service didn't answer /api/health.
+# GitHub may delay scheduled runs by a few minutes; the 10-minute Context.dev monitor on /mock also wakes it.
+name: keepalive
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /api/health
+        env:
+          URL: https://flatradar-u7ei.onrender.com/api/health
+        run: |
+          for i in 1 2 3; do
+            body=$(curl -fsS --max-time 60 "$URL") && { echo "$body" | head -c 400; echo; exit 0; }
+            echo "attempt $i failed, retrying"; sleep 10
+          done
+          echo "::error::$URL did not answer"; exit 1
