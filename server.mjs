@@ -11,7 +11,7 @@ import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, pr
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
 import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
-import { mediaEnabled, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
+import { mediaEnabled, ownPublicId, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
 import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
@@ -193,7 +193,9 @@ async function route(req, res) {
   if (p === '/mock/publish' && req.method === 'POST') {
     const b = await readJson(req);
     const preset = b.preset && PRESETS[b.preset] ? b.preset : 'kallio-2h';
-    const photos = Array.isArray(b.photos) ? b.photos.filter((u) => typeof u === 'string').slice(0, 12) : [];
+    // Only photos already in our Cloudinary account (the Upload Widget's): this route is public, and other URLs
+    // would make us upload arbitrary images and spend AI Vision tokens on them.
+    const photos = Array.isArray(b.photos) ? b.photos.filter((u) => ownPublicId(u)).slice(0, 12) : [];
     return send(res, 200, { listing_id: await triggerMock(preset, photos) });
   }
   if ((m = p.match(/^\/mock\/([\w-]+)$/))) {
