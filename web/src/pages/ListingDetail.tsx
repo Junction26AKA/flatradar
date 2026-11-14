@@ -41,7 +41,7 @@ export default function ListingDetail() {
         </a>
       )}
       <p className="t-num-m">
-        {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)} · ${t(`confidence.${l.score.confidence}`)}`}
+        {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)}`}
       </p>
       {l.flags.length > 0 && <div className="lcard__flags">{sortFlags(l.flags).map((f) => <FlagChip key={f.id + f.status} flag={f} />)}</div>}
       {l.also_on && Object.keys(l.also_on).length > 0 && (

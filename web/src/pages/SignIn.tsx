@@ -17,6 +17,7 @@ export default function SignIn() {
   const next = params.get('next')?.startsWith('/app') ? params.get('next')! : '/app';
   const [mode, setMode] = useState<'up' | 'in'>(params.get('mode') === 'in' ? 'in' : 'up');
   const [busy, setBusy] = useState(false);
+  const [kind, setKind] = useState<Kind>('sale');
   // a message key (translated at render, so it follows a language switch) or a server text as sent
   const [error, setError] = useState<MessageKey | string | null>(null);
 
@@ -84,12 +85,12 @@ export default function SignIn() {
           <fieldset>
             <legend className="t-h4">{t('si.first')}</legend>
             <div className="signin__row">
-              <label>{t('si.lookingTo')}<select name="kind" defaultValue="sale"><option value="sale">{t('si.kindSale')}</option><option value="rent">{t('si.kindRent')}</option></select></label>
-              <label>{t('si.maxPrice')}<input name="max_price" inputMode="numeric" placeholder="280000" /></label>
-              <label>{t('si.minRooms')}<input name="min_rooms" inputMode="numeric" placeholder="2" /></label>
+              <label>{t('si.lookingTo')}<select name="kind" value={kind} onChange={(e) => setKind(e.target.value as Kind)}><option value="sale">{t('si.kindSale')}</option><option value="rent">{t('si.kindRent')}</option></select></label>
+              <label>{t(kind === 'rent' ? 'si.maxRent' : 'si.maxPrice')}<input name="max_price" inputMode="numeric" placeholder={t('si.any')} /></label>
+              <label>{t('si.minRooms')}<input name="min_rooms" inputMode="numeric" placeholder={t('si.any')} /></label>
             </div>
-            <label>{t('si.postcodes')}<input name="postcodes" placeholder="00530, 00500" /></label>
-            <label>{t('si.minDeal')}<input name="min_deal" type="number" min={0} max={50} defaultValue={10} /></label>
+            <label>{t('si.postcodes')}<input name="postcodes" placeholder={t('si.postcodesPh')} /></label>
+            <label>{t('si.minDeal')}<input name="min_deal" type="number" min={0} max={50} defaultValue={10} /><span className="t-body-s muted">{t('si.minDealHint')}</span></label>
           </fieldset>
         )}
         {error && <p className="signin__error" role="alert">{isMessageKey(error) ? t(error) : error}</p>}
