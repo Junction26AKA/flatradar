@@ -9,7 +9,7 @@ import getDb, { client } from './lib/db.mjs';
 import { bus } from './lib/bus.mjs';
 import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, processSearchPage } from './lib/monitors.mjs';
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
-import { enrichFromCard } from './lib/enrich.mjs';
+import { enrichFromCard, resumeStuck } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
@@ -221,7 +221,11 @@ async function route(req, res) {
 const server = http.createServer((req, res) => {
   route(req, res).catch((e) => { log('error', req.method, req.url, e.message); if (!res.headersSent) send(res, 500, { error: 'internal error' }); });
 });
-server.listen(PORT, HOST, () => log(`FlatRadar on http://${HOST}:${PORT} (public: ${PUBLIC_URL ?? 'none'})`));
+server.listen(PORT, HOST, () => {
+  log(`FlatRadar on http://${HOST}:${PORT} (public: ${PUBLIC_URL ?? 'none'})`);
+  // Finish anything a previous instance left half-done (free instances restart without warning).
+  setTimeout(() => resumeStuck().then((n) => n && log(`resumed ${n} half-enriched listings`)).catch((e) => log('resume failed', e.message)), 5_000);
+});
 
 const stop = async () => { server.close(); for (const r of clients) r.end(); await client.close(); process.exit(0); };
 process.on('SIGINT', stop);
