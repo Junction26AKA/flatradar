@@ -41,7 +41,7 @@ export const MESSAGES = {
   'card.lowConfidence': { en: 'low confidence', fi: 'epävarma arvio' },
   'card.sold': { en: 'Sold', fi: 'Myyty' },
   'card.let': { en: 'Rented', fi: 'Vuokrattu' },
-  'card.soldTitle': { en: 'Removed from the portal {ago}', fi: 'Poistunut portaalista {ago}' },
+  'card.soldTitle': { en: (v: { ago: string }) => `Removed from the portal ${v.ago}`, fi: (v: { ago: string }) => `Poistunut portaalista ${v.ago}` },
   'card.matches': { en: 'Matches your search', fi: 'Vastaa hakuasi' },
   'card.roomsOriginal': { en: (v: { s: string }) => `Original listing: ${v.s}`, fi: (v: { s: string }) => v.s },
   'flag.checking': { en: '(checking)', fi: '(tarkistetaan)' },

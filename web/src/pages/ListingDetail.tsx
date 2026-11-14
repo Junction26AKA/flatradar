@@ -34,9 +34,6 @@ export default function ListingDetail() {
     <>
     <div className="detail-scaffold">
       <h2 className="t-h3">{l.address}</h2>
-      {l.removed_at && (
-        <p><span className="sold t-label" title={t('card.soldTitle', { ago: ago(l.removed_at, Date.now()) })}>{t(l.kind === 'rent' ? 'card.let' : 'card.sold')}</span></p>
-      )}
       <p className="t-body-s muted">{factsLine(l)}</p>
       {l.removed_at && (
         <p className="t-body-s"><span className="sold t-label">{t(l.kind === 'rent' ? 'card.let' : 'card.sold')}</span> {t('card.soldTitle', { ago: ago(l.removed_at) })}</p>
