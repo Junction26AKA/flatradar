@@ -61,6 +61,7 @@ context.web.scrape = async ({ url }) => {
 };
 
 const db = await getDb();
+if (db.databaseName !== 'flatradar_test_dedupe') throw new Error(`refusing to drop ${db.databaseName}`);
 await db.dropDatabase();
 const run = () => Promise.all(['etuovi', 'oikotie'].map((portal) => processSearchPage({ portal, url: PORTALS[portal].search(1) }, { reason: 'test' })));
 
