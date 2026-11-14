@@ -228,14 +228,17 @@ const server = http.createServer((req, res) => {
 });
 server.listen(PORT, HOST, () => {
   log(`FlatRadar on http://${HOST}:${PORT} (public: ${PUBLIC_URL ?? 'none'})`);
-  // Finish anything a previous instance left half-done (free instances restart without warning).
-  setTimeout(() => resumeStuck().then((n) => n && log(`resumed ${n} half-enriched listings`)).catch((e) => log('resume failed', e.message)), 5_000);
-  // Gemini runs a previous instance left pending (anything started before this process), then a sweep every
-  // 3 min for runs that died since (a deploy can stop the old instance mid-run).
+  // Finish work a previous instance left half-done (free instances restart without warning, and a deploy can stop
+  // the old instance mid-run): at startup, anything started before this process; then a sweep every 3 min.
   const startedAt = new Date();
-  const sweep = (before) => resumeInsights({ before }).then((n) => n && log(`retried ${n} unfinished Gemini analyses`)).catch((e) => log('insight resume failed', e.message));
-  setTimeout(() => sweep(startedAt), 10_000);
-  setInterval(() => sweep(new Date(Date.now() - 2 * 60 * 1000)), 3 * 60 * 1000).unref();
+  const resumeEnrich = (before) => resumeStuck({ before }).then((n) => n && log(`resumed ${n} half-enriched listings`)).catch((e) => log('resume failed', e.message));
+  const resumeGemini = (before) => resumeInsights({ before }).then((n) => n && log(`retried ${n} unfinished Gemini analyses`)).catch((e) => log('insight resume failed', e.message));
+  setTimeout(() => resumeEnrich(startedAt), 5_000);
+  setTimeout(() => resumeGemini(startedAt), 10_000);
+  setInterval(() => {
+    resumeEnrich(new Date(Date.now() - 5 * 60 * 1000));
+    resumeGemini(new Date(Date.now() - 2 * 60 * 1000));
+  }, 3 * 60 * 1000).unref();
 });
 
 const stop = async () => { server.close(); for (const r of clients) r.end(); await client.close(); process.exit(0); };
