@@ -11,6 +11,7 @@ import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, pr
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
 import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
+import { mediaEnabled, ownPublicId, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
 import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
@@ -63,8 +64,8 @@ function openStream(req, res) {
 
 // ---------- mock demo flow ----------
 let mockFallbackTimer = null;
-async function triggerMock(preset) {
-  const slug = await publishMock(preset);
+async function triggerMock(preset, photos = []) {
+  const slug = await publishMock(preset, photos);
   const listingId = `mock:${slug}`;
   const mon = await db.collection('monitors').findOne({ portal: 'mock' });
   if (PUBLIC_URL && mon) {
@@ -134,6 +135,13 @@ async function route(req, res) {
   }
 
   let m;
+  // Share card (Cloudinary overlay URL): redirects, so <img src> and links keep working if the deal changes.
+  if ((m = p.match(/^\/api\/listings\/(.+)\/card$/)) && req.method === 'GET') {
+    const listing = await db.collection('listings').findOne({ _id: decodeURIComponent(m[1]) }, { projection: { doc_extracts: 0 } });
+    const card = listing && shareCardUrl(listing);
+    if (!card) return send(res, 404, { error: 'no photos for this listing' });
+    return send(res, 302, { url: card }, { Location: card, 'Cache-Control': 'public, max-age=60' });
+  }
   if ((m = p.match(/^\/api\/listings\/(.+)$/)) && req.method === 'GET') {
     const id = decodeURIComponent(m[1]);
     const listing = await db.collection('listings').findOne({ _id: id }, { projection: { doc_extracts: 0 } });
@@ -186,7 +194,10 @@ async function route(req, res) {
   if (p === '/mock/publish' && req.method === 'POST') {
     const b = await readJson(req);
     const preset = b.preset && PRESETS[b.preset] ? b.preset : 'kallio-2h';
-    return send(res, 200, { listing_id: await triggerMock(preset) });
+    // Only photos already in our Cloudinary account (the Upload Widget's): this route is public, and other URLs
+    // would make us upload arbitrary images and spend AI Vision tokens on them.
+    const photos = Array.isArray(b.photos) ? b.photos.filter((u) => ownPublicId(u)).slice(0, 12) : [];
+    return send(res, 200, { listing_id: await triggerMock(preset, photos) });
   }
   if ((m = p.match(/^\/mock\/([\w-]+)$/))) {
     const html = await renderListing(m[1]);
@@ -198,6 +209,15 @@ async function route(req, res) {
   if (p === '/admin/monitors' && req.method === 'POST') {
     if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
     return send(res, 200, { monitors: await ensureMonitors(PUBLIC_URL) });
+  }
+  // Re-run the Cloudinary photo pass: { id } for one listing, or { limit } for the newest listings with photos.
+  if (p === '/admin/photos' && req.method === 'POST') {
+    if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
+    if (!mediaEnabled) return send(res, 400, { error: 'CLOUDINARY_URL is not set' });
+    const b = await readJson(req);
+    const ids = b.id ? [b.id] : (await db.collection('listings').find({ 'photos.0': { $exists: true } }, { projection: { _id: 1 } }).sort({ first_seen_at: -1 }).limit(Math.min(Number(b.limit) || 10, 50)).toArray()).map((d) => d._id);
+    (async () => { for (const id of ids) await processListingPhotos(id); })().catch((e) => log('photo pass failed', e.message));
+    return send(res, 202, { started: ids });
   }
   if (p === '/admin/listing-monitors' && req.method === 'POST') {
     if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });

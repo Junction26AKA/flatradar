@@ -31,7 +31,9 @@ export interface Score {
 
 export type FlagType =
   | 'renovation_upcoming' | 'pipe_renovation' | 'facade_balcony' | 'company_loan' | 'leased_plot'
-  | 'high_fee' | 'street_works' | 'news' | 'landlord' | 'commute';
+  | 'high_fee' | 'street_works' | 'news' | 'landlord' | 'commute'
+  /** Cloudinary AI Vision read the listing photos (lib/media). */
+  | 'photo_condition';
 export type Severity = 'info' | 'warn' | 'high';
 
 export interface Flag {
@@ -42,9 +44,11 @@ export interface Flag {
   detail: string | null;
   est_cost_eur: number | null;
   year: number | null;
-  source: { kind: 'listing' | 'pdf' | 'news' | 'open_data'; url: string | null; quote: string | null; page: number | null } | null;
-  /** Present when the Gemini analyst found it. */
-  origin?: 'gemini';
+  source: { kind: 'listing' | 'pdf' | 'news' | 'open_data' | 'photo'; url: string | null; quote: string | null; page: number | null } | null;
+  /** 'gemini' = the Gemini analyst found it; 'photos' = Cloudinary AI Vision found it in a listing photo. */
+  origin?: 'gemini' | 'photos';
+  /** photo_condition flags: index into `media.photos` of the photo that shows it. */
+  photo?: number;
   /** Finnish label and detail (Gemini flags only). */
   label_fi?: string;
   detail_fi?: string | null;
@@ -71,6 +75,33 @@ export type Insight =
       ms: number;
       at: string;
     };
+
+/** Room type from AI Vision; picks the "after renovation" preview prompt. */
+export type PhotoRoom = 'kitchen' | 'bathroom' | 'exterior' | 'plan' | 'room';
+
+export interface MediaPhoto {
+  /** Cloudinary public id in the `cloud` below. */
+  public_id: string;
+  width: number;
+  height: number;
+  source_url: string;
+  /** AI Vision tags, e.g. ['kitchen', 'dated_kitchen']. Empty when not analysed. */
+  tags: string[];
+  room: PhotoRoom;
+  /** AI Vision has read this photo (tags may still be empty). */
+  analysed?: boolean;
+}
+
+/** lib/media: listing photos in Cloudinary. Arrives a few seconds after the listing is `ready`. */
+export interface Media {
+  status: 'pending' | 'ok' | 'error';
+  cloud: string;
+  photos: MediaPhoto[];
+  analysed?: boolean;
+  error?: string | null;
+  ms?: number;
+  at: string;
+}
 
 export interface PricePoint {
   at: string;
@@ -115,6 +146,9 @@ export interface Listing {
   renovations_done?: string | null;
   renovations_upcoming?: string | null;
   attachments?: { title: string; url: string }[];
+  /** Gallery photo URLs from the listing page. */
+  photos?: string[] | null;
+  media?: Media | null;
   first_seen_at: string;
   last_seen_at?: string;
   price_history?: PricePoint[];

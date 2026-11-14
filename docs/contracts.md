@@ -30,6 +30,8 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
   "agent_company": "Vauramo LKV",
   "renovations_done": "free text (Finnish)", "renovations_upcoming": "free text (Finnish)",
   "attachments": [{ "title": "Isännöitsijäntodistus", "url": "https://…pdf" }],
+  "photos": ["https://…jpg"],         // gallery photo URLs from the extraction (null = not extracted yet)
+  "media": Media | null,              // §1b, filled in by lib/media (Cloudinary) a few seconds after `ready`
   "first_seen_at": "ISO date", "last_seen_at": "ISO date",
   "price_history": [{ "at": "ISO date", "price": 329000, "debt_free_price": 329000, "rent": null }],
   "score": Score | null,              // §2, filled in by Kevin's /score
@@ -39,6 +41,23 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
 }
 ```
 The price per m² that everything compares on is `debt_free_price / m2` for a sale and `rent / m2` (per month) for a rental.
+
+### 1b. `media` (Cloudinary, lib/media, Amanda)
+Runs after the listing is `ready`, never awaited (like the Gemini analyst). Only when `CLOUDINARY_URL` is set.
+```jsonc
+{
+  "status": "pending" | "ok" | "error",
+  "cloud": "<cloud name>",            // the web app builds delivery URLs from this + public_id (no env vars needed)
+  "photos": [{ "public_id": "flatradar/listings/etuovi-20828740/3f9a1c0be27d", "width": 1600, "height": 1067,
+               "source_url": "https://…", "tags": ["kitchen", "dated_kitchen"],   // Cloudinary AI Vision tags
+               "room": "kitchen" | "bathroom" | "exterior" | "plan" | "room",
+               "analysed": true }],         // this photo went through AI Vision (re-runs skip it)
+  "analysed": true,                   // false = AI Vision add-on off or failed; photos still shown
+  "error": null, "ms": 6400, "at": "ISO date"
+}
+```
+AI Vision tags become flags with `type: "photo_condition"`, `origin: "photos"`, `photo: <index into media.photos>`
+and `source.kind: "photo"` (see §3). They're swapped atomically on each photo pass, leaving other flags alone.
 
 ## 2. `/score` (Kevin, Python, `POST http://localhost:8000/score`)
 The request body is a `listing` (with or without `score` and `flags`). The response is a `Score`:
@@ -66,13 +85,13 @@ The request body is a `listing` (with or without `score` and `flags`). The respo
 {
   "id": "f_ab12",
   "type": "renovation_upcoming" | "pipe_renovation" | "facade_balcony" | "company_loan" | "leased_plot"
-        | "high_fee" | "street_works" | "news" | "landlord" | "commute",
+        | "high_fee" | "street_works" | "news" | "landlord" | "commute" | "photo_condition",
   "severity": "info" | "warn" | "high",
   "label": "Facade + balcony renovation 2027",       // short, English, shown on the chip
   "detail": "Works start 11–12/2026, 6 months.",       // one or two sentences
   "est_cost_eur": 18000,       // nullable; this flat's estimated share
   "year": 2027,                // nullable
-  "source": { "kind": "listing" | "pdf" | "news" | "open_data", "url": "…", "quote": "2027 Parvekkeet ja julkisivu…", "page": null },
+  "source": { "kind": "listing" | "pdf" | "news" | "open_data" | "photo", "url": "…", "quote": "2027 Parvekkeet ja julkisivu…", "page": null },
   "origin": "gemini",          // optional: present when the Gemini analyst found it (rules flags have no origin)
   "label_fi": "Putkiremontti 2028", "detail_fi": "…",   // Gemini flags only: Finnish label and detail
   "status": "ok" | "pending" | "error"   // pending = call still running (show a spinner chip)
@@ -113,7 +132,9 @@ The model never produces a number:
 | `GET /api/me` | `{ user: { id, email, name, searches } }`, or `401` if not signed in |
 | `POST /api/session` `{ email, password }` | `{ user }` and sets the session cookie, or `401 { error }` |
 | `DELETE /api/session` | `{ ok: true }` and clears the cookie |
-| `POST /mock/publish` `{ preset?: "kallio-2h" }` | `{ listing_id }` and starts the demo flow |
+| `POST /mock/publish` `{ preset?: "kallio-2h", photos?: ["https://res.cloudinary.com/…"] }` | `{ listing_id }` and starts the demo flow. `/mock` has a Cloudinary Upload Widget panel that calls this with photos |
+| `GET /api/listings/:id/card` | `302` to a 1200×630 Cloudinary share card (photo + deal band), `404` if no photos. Also used in the alert email |
+| `POST /admin/photos` `{ id }` or `{ limit }` | `202 { started: [ids] }`: re-runs the Cloudinary photo pass |
 | `GET /api/health` | `{ ok, monitors, last_webhook_at, credits_remaining }` |
 | `GET /stream` | Server-Sent Events, see §5 |
 

@@ -1,4 +1,6 @@
 import { memo } from 'react';
+import { AdvancedImage, lazyload, placeholder } from '@cloudinary/react';
+import { coverPhoto, thumb } from '../lib/cloudinary';
 import { Link } from 'react-router-dom';
 import { ago, agoShort, factsLine, perM2, pricePerM2, priceLabel, shortAddress, shortDistrict } from '../lib/format';
 import { useI18n } from '../lib/i18n';
@@ -33,6 +35,7 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
   const seenS = (now - Date.parse(l.first_seen_at)) / 1000;
   const scoring = !score && l.status !== 'ready';
   const good = score != null && score.deal_pct <= -0.03;
+  const cover = compact ? null : coverPhoto(l);
 
   return (
     <Link
@@ -44,6 +47,16 @@ export const ListingCard = memo(function ListingCard({ listing: l, now, to, comp
       onFocus={onHover && (() => onHover(l._id))}
       onBlur={onHover && (() => onHover(null))}
     >
+      {cover && l.media && (
+        <AdvancedImage
+          className="lcard__photo"
+          cldImg={thumb(l.media.cloud, cover, 640, 320)}
+          plugins={[lazyload(), placeholder({ mode: 'blur' })]}
+          width={640}
+          height={320}
+          alt=""
+        />
+      )}
       <div className="lcard__top">
         <span className="t-eyebrow lcard__where">
           {[shortDistrict(l), compact ? null : l.postcode].filter(Boolean).join(' · ') || t(l.kind === 'rent' ? 'kind.forRent' : 'kind.forSale')}
