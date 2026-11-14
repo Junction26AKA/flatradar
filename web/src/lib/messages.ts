@@ -27,9 +27,9 @@ export const MESSAGES = {
   'confidence.high': { en: 'high', fi: 'hyvä' },
 
   // ---- deal badge / card
-  'deal.good': { en: (v: { p: string }) => `−${v.p}% vs fair`, fi: (v: { p: string }) => `−${v.p} % käyvästä` }, // not "−18 % alle käyvän": minus + alle is a double negative
-  'deal.bad': { en: (v: { p: string }) => `+${v.p}% overpriced`, fi: (v: { p: string }) => `+${v.p} % ylihintainen` },
-  'deal.fair': { en: (v: { p: string }) => `±${v.p}% fair price`, fi: (v: { p: string }) => `±${v.p} % käypä hinta` },
+  'deal.good': { en: (v: { p: string }) => `${v.p}% under fair price`, fi: (v: { p: string }) => `${v.p} % alle käyvän hinnan` },
+  'deal.bad': { en: (v: { p: string }) => `${v.p}% over fair price`, fi: (v: { p: string }) => `${v.p} % yli käyvän hinnan` },
+  'deal.fair': { en: (_v: { p: string }) => `Fair price`, fi: (_v: { p: string }) => `Käypä hinta` },
   'deal.title': { en: 'Asking price vs our fair-value estimate', fi: 'Pyyntihinta verrattuna arvioimaamme käypään hintaan' },
   'price.dropped': { en: '↓ Price dropped', fi: '↓ Hinta laski' },
   'price.raised': { en: '↑ Price raised', fi: '↑ Hinta nousi' },
