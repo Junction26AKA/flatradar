@@ -1,0 +1,18 @@
+.fav {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-primary);
+  cursor: pointer; transition: transform 0.15s var(--ease-out), background 0.15s, border-color 0.15s;
+}
+.fav svg { fill: none; stroke: currentColor; stroke-width: 1.8; transition: fill 0.15s, transform 0.2s var(--ease-out); }
+.fav:hover svg { transform: scale(1.1); }
+.fav:active { transform: scale(0.94); }
+.fav:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.fav.is-on { color: var(--deal-bad); border-color: color-mix(in srgb, var(--deal-bad) 40%, var(--border)); }
+.fav.is-on svg { fill: currentColor; animation: fav-pop 0.3s var(--ease-out); }
+.fav.is-failed { border-color: var(--deal-bad); }
+
+.fav--icon { width: 36px; height: 36px; border-radius: var(--radius-full); box-shadow: var(--shadow-card); }
+.fav--labelled { height: 34px; padding: 0 14px; border-radius: var(--radius-full); justify-self: start; }
+
+@keyframes fav-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .fav, .fav svg, .fav.is-on svg { transition: none; animation: none; } }

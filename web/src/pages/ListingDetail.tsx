@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnalystPanel } from '../components/AnalystPanel';
+import { FavButton } from '../components/FavButton';
 import { ListingPhotos } from '../components/ListingPhotos';
 import { getListing } from '../lib/api';
 import { FlagChip, sortFlags } from '../components/FlagChip';
@@ -38,11 +39,14 @@ export default function ListingDetail() {
       {l.removed_at && (
         <p className="t-body-s"><span className="sold t-label">{t(l.kind === 'rent' ? 'card.let' : 'card.sold')}</span> {t('card.soldTitle', { ago: ago(l.removed_at) })}</p>
       )}
-      {l.url && PORTAL_NAMES[l.portal] && (
-        <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
-          {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
-        </a>
-      )}
+      <div className="detail-actions">
+        <FavButton id={l._id} variant="labelled" />
+        {l.url && PORTAL_NAMES[l.portal] && (
+          <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
+            {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
+          </a>
+        )}
+      </div>
       {l.score && (
         <p className="t-num-m">{t('detail.fair', { price: eur(l.score.fair_price), pct: Math.round(l.score.deal_pct * 1000) / 10 })}</p>
       )}

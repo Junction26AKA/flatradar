@@ -22,6 +22,9 @@ await db.collection('calls').createIndexes([
   { key: { started_at: -1 }, name: 'started' },
 ]);
 await db.collection('users').createIndex({ email: 1 }, { unique: true, name: 'email_unique' });
+await db.collection('users').createIndex({ favourites: 1 }, { name: 'favourites' }); // price-drop alerts for saved flats
+// One favourite_drop email per saver, flat and new price (lib/alerts claims the row before sending).
+await db.collection('alerts').createIndex({ user_id: 1, listing_id: 1, type: 1, new_price: 1 }, { unique: true, partialFilterExpression: { type: 'favourite_drop' }, name: 'favourite_drop_unique' });
 // Mongo deletes sessions once expires_at passes (lib/auth.mjs also checks it, so this is only cleanup).
 await db.collection('sessions').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'expires_ttl' });
 
