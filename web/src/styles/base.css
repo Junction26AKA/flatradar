@@ -56,3 +56,14 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* EN | FI language switch (lib/i18n.tsx) */
+.langsw { display: inline-flex; padding: 2px; border-radius: var(--radius-full); border: 1.5px solid var(--border-brand); flex: none; }
+.langsw button {
+  border: 0; background: none; cursor: pointer; color: var(--text-primary);
+  font: 600 12px/1 var(--font-body); letter-spacing: 0.06em; padding: 5px 9px; border-radius: var(--radius-full);
+}
+.langsw button[aria-pressed='true'] { background: var(--bg-brand); color: var(--text-on-brand); }
+.langsw--dark { border-color: rgb(255 255 255 / 0.6); }
+.langsw--dark button { color: #fff; }
+.langsw--dark button[aria-pressed='true'] { background: #fff; color: #002F6C; }

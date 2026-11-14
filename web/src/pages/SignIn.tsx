@@ -3,18 +3,22 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { HttpError } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { LangSwitch, useI18n } from '../lib/i18n';
+import { errorMessage, isMessageKey, type MessageKey } from '../lib/messages';
 import type { Kind, SavedSearch } from '../lib/types';
 import './signin.css';
 
 /** /signin: sign-up with a first saved search, or sign back in by email. Styled properly in step 4. */
 export default function SignIn() {
   const { status, signUp, signIn } = useAuth();
+  const { t } = useI18n();
   const nav = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next')?.startsWith('/app') ? params.get('next')! : '/app';
   const [mode, setMode] = useState<'up' | 'in'>(params.get('mode') === 'in' ? 'in' : 'up');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // a message key (translated at render, so it follows a language switch) or a server text as sent
+  const [error, setError] = useState<MessageKey | string | null>(null);
 
   if (status === 'signed-in' && !busy) return <Navigate to={next} replace />;
 
@@ -41,9 +45,9 @@ export default function SignIn() {
     } catch (err) {
       if (err instanceof HttpError && err.status === 409) {
         setMode('in');
-        setError('You already have an account with that email. Sign in instead.');
+        setError('si.exists');
       } else {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
+        setError(errorMessage(err, 'si.error'));
       }
       setBusy(false);
     }
@@ -52,43 +56,46 @@ export default function SignIn() {
   return (
     <div className="signin">
       <aside className="signin__brand">
-        <Link to="/" className="signin__logo"><Logo size={36} /><span className="t-h4">FlatRadar</span></Link>
-        <p className="t-h3">Every new Helsinki listing, scored in seconds, with the hidden costs called out before you book a viewing.</p>
+        <div className="signin__top">
+          <Link to="/" className="signin__logo"><Logo size={36} /><span className="t-h4">FlatRadar</span></Link>
+          <LangSwitch onDark />
+        </div>
+        <p className="t-h3">{t('si.brand')}</p>
       </aside>
       <form className="signin__form" onSubmit={onSubmit}>
-        <h1 className="t-h1">{mode === 'up' ? 'Start saving' : 'Welcome back'}</h1>
-        <p className="t-body-l muted">{mode === 'up' ? 'Tell us where to send deals and what you’re looking for.' : 'Sign in to see your feed and alerts.'}</p>
+        <h1 className="t-h1">{t(mode === 'up' ? 'si.upH' : 'si.inH')}</h1>
+        <p className="t-body-l muted">{t(mode === 'up' ? 'si.upSub' : 'si.inSub')}</p>
         <div className="signin__row">
-          {mode === 'up' && <label>Name<input name="name" autoComplete="name" placeholder="Your name" /></label>}
-          <label>Email<input name="email" type="email" required autoComplete="email" placeholder="you@example.com" /></label>
+          {mode === 'up' && <label>{t('si.name')}<input name="name" autoComplete="name" placeholder={t('si.namePh')} /></label>}
+          <label>{t('si.email')}<input name="email" type="email" required autoComplete="email" placeholder={t('si.emailPh')} /></label>
         </div>
         <label>
-          Password
+          {t('si.password')}
           <input
             name="password"
             type="password"
             required
             minLength={mode === 'up' ? 8 : 1}
             autoComplete={mode === 'up' ? 'new-password' : 'current-password'}
-            placeholder={mode === 'up' ? 'At least 8 characters' : ''}
+            placeholder={mode === 'up' ? t('si.passwordPh') : ''}
           />
         </label>
         {mode === 'up' && (
           <fieldset>
-            <legend className="t-h4">Your first search</legend>
+            <legend className="t-h4">{t('si.first')}</legend>
             <div className="signin__row">
-              <label>Looking to<select name="kind" defaultValue="sale"><option value="sale">Buy</option><option value="rent">Rent</option></select></label>
-              <label>Max price (€)<input name="max_price" inputMode="numeric" placeholder="280000" /></label>
-              <label>Min rooms<input name="min_rooms" inputMode="numeric" placeholder="2" /></label>
+              <label>{t('si.lookingTo')}<select name="kind" defaultValue="sale"><option value="sale">{t('si.kindSale')}</option><option value="rent">{t('si.kindRent')}</option></select></label>
+              <label>{t('si.maxPrice')}<input name="max_price" inputMode="numeric" placeholder="280000" /></label>
+              <label>{t('si.minRooms')}<input name="min_rooms" inputMode="numeric" placeholder="2" /></label>
             </div>
-            <label>Postcodes<input name="postcodes" placeholder="00530, 00500" /></label>
-            <label>Alert me when at least … % below fair value<input name="min_deal" type="number" min={0} max={50} defaultValue={10} /></label>
+            <label>{t('si.postcodes')}<input name="postcodes" placeholder="00530, 00500" /></label>
+            <label>{t('si.minDeal')}<input name="min_deal" type="number" min={0} max={50} defaultValue={10} /></label>
           </fieldset>
         )}
-        {error && <p className="signin__error" role="alert">{error}</p>}
-        <button className="btn btn--primary" disabled={busy}>{busy ? 'One moment…' : mode === 'up' ? 'Start watching →' : 'Sign in →'}</button>
+        {error && <p className="signin__error" role="alert">{isMessageKey(error) ? t(error) : error}</p>}
+        <button className="btn btn--primary" disabled={busy}>{busy ? t('si.busy') : t(mode === 'up' ? 'si.submitUp' : 'si.submitIn')}</button>
         <button type="button" className="btn btn--link" onClick={() => { setMode(mode === 'up' ? 'in' : 'up'); setError(null); }}>
-          {mode === 'up' ? 'Already watching? Sign in with your email' : 'New here? Create a search'}
+          {t(mode === 'up' ? 'si.toIn' : 'si.toUp')}
         </button>
       </form>
     </div>
