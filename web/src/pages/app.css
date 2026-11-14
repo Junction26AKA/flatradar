@@ -12,6 +12,21 @@
   width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
   background: var(--coin-face); color: #002F6C; font: 700 13px var(--font-display);
 }
+.app-bar__user[aria-expanded='true'] { box-shadow: 0 0 0 3px rgb(255 255 255 / 0.35); }
+
+/* Account menu */
+.acct { position: relative; }
+.acct__menu {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 1100; min-width: 240px;
+  display: grid; padding: 6px; border-radius: var(--radius-md);
+  background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border); box-shadow: var(--shadow-float);
+}
+.acct__who { display: grid; gap: 2px; padding: 8px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.app-bar .acct__item, .acct__item {
+  display: block; width: 100%; text-align: left; padding: 9px 10px; border: 0; border-radius: var(--radius-sm);
+  background: none; color: var(--text-primary); font: 500 14px/18px var(--font-body); cursor: pointer; text-decoration: none;
+}
+.acct__item:hover, .acct__item:focus-visible { background: var(--bg-subtle); }
 .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--bg-surface); }
 .seg__btn { border: 0; background: none; cursor: pointer; padding: 7px 22px; border-radius: 8px; color: var(--text-primary); }
 .seg__btn[aria-selected='true'] { background: var(--bg-brand); color: var(--text-on-brand); }

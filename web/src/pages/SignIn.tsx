@@ -12,7 +12,7 @@ export default function SignIn() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next')?.startsWith('/app') ? params.get('next')! : '/app';
-  const [mode, setMode] = useState<'up' | 'in'>('up');
+  const [mode, setMode] = useState<'up' | 'in'>(params.get('mode') === 'in' ? 'in' : 'up');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -41,6 +41,16 @@ button { font: inherit; color: inherit; }
 }
 .fchip[aria-pressed='true'] { background: var(--bg-brand); border-color: var(--bg-brand); color: var(--text-on-brand); }
 
+/* Buttons (shared by sign-in, My searches, …) */
+.btn { justify-self: start; border: 0; cursor: pointer; border-radius: var(--radius-md); padding: 12px 24px; font: 600 15px var(--font-body); }
+.btn--primary { background: var(--bg-brand); color: var(--text-on-brand); }
+.btn--primary:disabled { opacity: 0.6; cursor: progress; }
+.btn--link { background: none; padding: 0; color: var(--text-link); font-weight: 400; text-decoration: underline; }
+.btn--ghost { background: none; color: var(--text-primary); border: 1px solid var(--border); }
+.btn--ghost:hover { border-color: var(--border-brand); }
+.btn--s { padding: 7px 14px; font-size: 13px; }
+.btn:disabled:not(.btn--primary) { opacity: 0.55; cursor: not-allowed; }
+
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {
