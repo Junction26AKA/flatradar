@@ -19,7 +19,6 @@ const T = {
     real: 'Real cost',
     found: 'Also found in the Finnish text',
     ask: 'Ask the agent',
-    meta: 'costs from rate table × m², summed in code',
   },
   fi: {
     title: 'Analyysi · Gemini',
@@ -32,7 +31,6 @@ const T = {
     real: 'Todellinen hinta',
     found: 'Löytyi myös ilmoituksen tekstistä',
     ask: 'Kysy välittäjältä',
-    meta: 'kulut: €/m²-taulukko × pinta-ala, laskettu koodissa',
   },
 } as const;
 
@@ -126,9 +124,6 @@ export function AnalystPanel({ listing: l, lang = 'en' }: { listing: Listing; la
         </>
       )}
 
-      <p className="t-num-s muted analyst__meta">
-        {ins.model} · {(ins.ms / 1000).toFixed(1)} s{ins.tokens ? ` · ${ins.tokens} tokens` : ''} · {t.meta}
-      </p>
     </section>
   );
 }

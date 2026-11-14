@@ -153,9 +153,7 @@ export const MESSAGES = {
   'detail.notFound': { en: 'Listing not found.', fi: 'Ilmoitusta ei löytynyt.' },
   'detail.back': { en: 'Back to feed', fi: 'Takaisin syötteeseen' },
   'detail.openPortal': { en: (v: { site: string }) => `View on ${v.site} ↗`, fi: (v: { site: string }) => `Avaa ${v.site} ↗` },
-  'detail.noFlags': { en: 'no flags yet', fi: 'ei huomioita vielä' },
   'detail.alsoOn': { en: 'Also listed on', fi: 'Myös täällä:' },
-  'detail.calls': { en: (v: { n: number }) => `${v.n} Context.dev calls recorded`, fi: (v: { n: number }) => `${v.n} Context.dev-kutsua tallennettu` },
 
   // ---- photos (Cloudinary)
   'ph.title': { en: 'Photos', fi: 'Kuvat' },

@@ -55,7 +55,7 @@ export default function AppShell() {
   );
 }
 
-/** Avatar → small menu (who you're signed in as, My searches, Sign out). Signing out goes to the landing page. */
+/** Avatar → small menu (who you're signed in as, Sign out). Signing out goes to the landing page. */
 function AccountMenu() {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
@@ -87,7 +87,6 @@ function AccountMenu() {
             <span className="t-body-s muted">{user?.email}</span>
             {user?.offline && <span className="t-num-s muted">{t('app.offline')}</span>}
           </div>
-          <Link role="menuitem" to="/app/searches" className="acct__item">{t('app.searches')}</Link>
           <button
             role="menuitem"
             className="acct__item"
