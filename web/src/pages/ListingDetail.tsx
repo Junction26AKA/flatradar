@@ -4,7 +4,7 @@ import { AnalystPanel } from '../components/AnalystPanel';
 import { ListingPhotos } from '../components/ListingPhotos';
 import { getListing } from '../lib/api';
 import { FlagChip, sortFlags } from '../components/FlagChip';
-import { dealLabel, eur, factsLine } from '../lib/format';
+import { eur, factsLine } from '../lib/format';
 import { useI18n } from '../lib/i18n';
 import { useFeed } from '../lib/store';
 import type { ListingDetail as Detail, Portal } from '../lib/types';
@@ -40,9 +40,9 @@ export default function ListingDetail() {
           {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
         </a>
       )}
-      <p className="t-num-m">
-        {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)}`}
-      </p>
+      {l.score && (
+        <p className="t-num-m">{t('detail.fair', { price: eur(l.score.fair_price), pct: Math.round(l.score.deal_pct * 1000) / 10 })}</p>
+      )}
       {l.flags.length > 0 && <div className="lcard__flags">{sortFlags(l.flags).map((f) => <FlagChip key={f.id + f.status} flag={f} />)}</div>}
       {l.also_on && Object.keys(l.also_on).length > 0 && (
         <p className="t-body-s muted">

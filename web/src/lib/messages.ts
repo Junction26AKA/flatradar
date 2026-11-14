@@ -153,6 +153,10 @@ export const MESSAGES = {
   'detail.notFound': { en: 'Listing not found.', fi: 'Ilmoitusta ei löytynyt.' },
   'detail.back': { en: 'Back to feed', fi: 'Takaisin syötteeseen' },
   'detail.openPortal': { en: (v: { site: string }) => `View on ${v.site} ↗`, fi: (v: { site: string }) => `Avaa ${v.site} ↗` },
+  'detail.fair': {
+    en: (v: { price: string; pct: number }) => `Fair price ${v.price} · ${v.pct === 0 ? 'asking matches it' : `asking is ${Math.abs(v.pct)}% ${v.pct < 0 ? 'below' : 'above'}`}`,
+    fi: (v: { price: string; pct: number }) => `Käypä hinta ${v.price} · ${v.pct === 0 ? 'pyyntihinta vastaa sitä' : `pyyntihinta on ${Math.abs(v.pct)} % ${v.pct < 0 ? 'alle' : 'yli'}`}`,
+  },
   'detail.alsoOn': { en: 'Also listed on', fi: 'Myös täällä:' },
 
   // ---- photos (Cloudinary)
