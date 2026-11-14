@@ -13,6 +13,7 @@ import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
 import { mediaEnabled, ownPublicId, processListingPhotos, shareCardUrl } from './lib/media/index.mjs';
 import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
+import { ensureListingMonitor } from './lib/listing-monitors.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -197,6 +198,11 @@ async function route(req, res) {
     }
     const update = req.method === 'POST' ? { $addToSet: { favourites: id } } : { $pull: { favourites: id } };
     const r = await db.collection('users').findOneAndUpdate({ _id: me._id }, { ...update, $set: { updated_at: new Date() } }, { returnDocument: 'after', projection: { favourites: 1 } });
+    // A saved flat should be watched for price drops: give it its own monitor (no-op when off or at the cap).
+    if (req.method === 'POST') {
+      db.collection('listings').findOne({ _id: id }, { projection: { _id: 1, portal: 1, url: 1, removed_at: 1 } })
+        .then((l) => l && ensureListingMonitor(l)).catch((e) => log('favourite monitor failed', e.message));
+    }
     return send(res, 200, { favourites: r?.favourites ?? [] });
   }
 

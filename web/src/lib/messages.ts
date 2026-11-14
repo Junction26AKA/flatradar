@@ -40,6 +40,8 @@ export const MESSAGES = {
   'card.fair': { en: 'fair', fi: 'käypä' },
   'card.lowConfidence': { en: 'low confidence', fi: 'epävarma arvio' },
   'card.matches': { en: 'Matches your search', fi: 'Vastaa hakuasi' },
+  'card.removed': { en: 'Sold or removed', fi: 'Myyty tai poistettu' },
+  'card.removedTitle': { en: 'The ad is no longer on the portal', fi: 'Ilmoitus ei ole enää portaalissa' },
   'card.roomsOriginal': { en: (v: { s: string }) => `Original listing: ${v.s}`, fi: (v: { s: string }) => v.s },
   'flag.checking': { en: '(checking)', fi: '(tarkistetaan)' },
   'flag.failed': { en: 'This check failed', fi: 'Tarkistus epäonnistui' },

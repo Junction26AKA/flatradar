@@ -156,6 +156,8 @@ export interface Listing {
   also_on?: Partial<Record<Portal, { id: string; url: string; price: number | null; seen_at: string }>>;
   /** the latest search-card price drop (set by the diff), so the badge survives a reload */
   last_price_drop?: { old_price: number; new_price: number; at: string } | null;
+  /** set by the per-listing monitor when the ad is gone (sold, rented or taken down) */
+  removed_at?: string | null;
   score: Score | null;
   flags: Flag[];
   insight?: Insight | null;
