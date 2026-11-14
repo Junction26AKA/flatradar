@@ -111,9 +111,9 @@ export default function ListingMap({ listings, selectedId, hoverId, freshIds = {
       // Mac trackpads send a stream of tiny wheel events. With the default zoomSnap of 1, Leaflet rounds every
       // 40 ms batch UP to a whole level, so a gentle two-finger scroll flew from city to world view (12 → 0).
       // Unsnapped instead. Leaflet also divides Mac wheel deltas by 3×DPR, so the per-level distance has to be much
-      // smaller than its default 60. Measured in WebKit + Chromium (DPR 2): a gentle 250 px swipe ≈ 0.7–0.9 levels.
+      // smaller than its default 60. At 10 a 250 px swipe was 0.53 levels, which felt sluggish; at 5 it is 1.05 (Chrome, DPR 2).
       zoomSnap={0}
-      wheelPxPerZoomLevel={10}
+      wheelPxPerZoomLevel={5}
     >
       {/* Standard OSM tiles (no key). ListingMap.css tints them toward the Finnish-blue palette. */}
       <TileLayer
