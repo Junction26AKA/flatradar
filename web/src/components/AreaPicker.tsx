@@ -8,7 +8,7 @@ import './ListingMap.css';
 import './AreaPicker.css';
 
 const HELSINKI: [number, number] = [60.1899, 24.9384];
-export const MAX_AREAS = 3;
+export const MAX_AREAS = 5 // server keeps at most 5 (cleanSearch);
 const DEFAULT_RADIUS = 1000;
 const km = (m: number) => (m / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
@@ -66,7 +66,7 @@ export default function AreaPicker({ value, onChange }: { value: SearchArea[]; o
             <li key={i}>
               <span className="t-label">{t('sr.areaN', { n: i + 1 })}</span>
               <input
-                type="range" min={250} max={5000} step={250} value={a.radius_m}
+                type="range" min={250} max={20000} step={250} value={a.radius_m}
                 aria-label={t('sr.radius', { km: km(a.radius_m) })}
                 onChange={(e) => setRadius(i, Number(e.target.value))}
               />
