@@ -1,0 +1,158 @@
+{
+  "_id": "etuovi:20828740",
+  "portal": "etuovi",
+  "kind": "sale",
+  "url": "https://www.etuovi.com/kohde/20828740",
+  "address": "Wavulinintie 5, Helsinki",
+  "postcode": "00210",
+  "district": "Lauttasaari",
+  "loc": {
+    "type": "Point",
+    "coordinates": [
+      24.877301,
+      60.153901
+    ]
+  },
+  "building_type": "Kerrostalo",
+  "rooms": 2,
+  "rooms_description": "2h + kt + kph + vh + parv",
+  "m2": 49.5,
+  "year": 1972,
+  "floor": 1,
+  "floors_total": 6,
+  "elevator": true,
+  "sauna": true,
+  "balcony": true,
+  "condition": "Hyvä",
+  "plot": "own",
+  "energy_class": "E (2018)",
+  "price": 329000,
+  "debt_free_price": 329000,
+  "debt_share": null,
+  "rent": null,
+  "fee_month": 198,
+  "fee_m2": 4,
+  "housing_company": "Asunto Oy Merikylpylänranta",
+  "agent_company": "Vauramo LKV",
+  "renovations_done": "2026: täydellinen huoneistoremontti. Taloyhtiössä muun muassa linjasaneeraus ja märkätilojen peruskorjaus vuonna 2024 sekä maalämpö vuonna 2023.",
+  "renovations_upcoming": "2026 Uima-allasosaston valaisimien sähköt; 2026 Hissien kuntoarvio; 2027 Parvekkeet ja julkisivu (työt aloitetaan 11/12 2026, kesto 6 kk); 2027 Ikkunoiden käynnin tarkastus ja säätö; 2028 Lisärakentaminen; 2028 Kiinteistön kuntoarvio; 2028 Lukituksen uusiminen; 2029 Porraskäytävien ja yleisten tilojen ovien huoltokunnostus; 2029 Sähköautojen latausratkaisu",
+  "attachments": [],
+  "first_seen_at": "2026-11-14T02:20:00Z",
+  "last_seen_at": "2026-11-14T02:20:00Z",
+  "price_history": [
+    {
+      "at": "2026-11-14T02:20:00Z",
+      "price": 329000,
+      "debt_free_price": 329000
+    }
+  ],
+  "score": {
+    "fair_m2": 6150,
+    "fair_price": 304425,
+    "deal_pct": 0.081,
+    "confidence": "medium",
+    "model": {
+      "fair_m2": 6050,
+      "version": "illustrative",
+      "mae_pct": 0.11
+    },
+    "comps": {
+      "fair_m2": 6300,
+      "n": 3,
+      "radius_m": 1000,
+      "items": [
+        {
+          "id": "etuovi:example1",
+          "url": "https://www.etuovi.com/kohde/example1",
+          "address": "Example street 1, Lauttasaari",
+          "m2": 52,
+          "rooms": 2,
+          "year": 1970,
+          "price_m2": 6280,
+          "distance_m": 340
+        },
+        {
+          "id": "etuovi:example2",
+          "url": "https://www.etuovi.com/kohde/example2",
+          "address": "Example street 2, Lauttasaari",
+          "m2": 47,
+          "rooms": 2,
+          "year": 1968,
+          "price_m2": 6010,
+          "distance_m": 610
+        },
+        {
+          "id": "etuovi:example3",
+          "url": "https://www.etuovi.com/kohde/example3",
+          "address": "Example street 3, Lauttasaari",
+          "m2": 55,
+          "rooms": 2,
+          "year": 1975,
+          "price_m2": 6420,
+          "distance_m": 880
+        }
+      ]
+    },
+    "baseline": {
+      "source": "Statistics Finland 13mu",
+      "postcode": "00210",
+      "room_type": "two-room",
+      "year": 2025,
+      "eur_m2": 5980
+    },
+    "yield_pct": 0.046,
+    "scored_at": "2026-11-14T02:21:00Z"
+  },
+  "flags": [
+    {
+      "id": "f_1",
+      "type": "facade_balcony",
+      "severity": "high",
+      "label": "Facade + balcony renovation 2027",
+      "detail": "Works start 11–12/2026 and last 6 months.",
+      "est_cost_eur": null,
+      "year": 2027,
+      "source": {
+        "kind": "listing",
+        "url": "https://www.etuovi.com/kohde/20828740",
+        "quote": "2027 Parvekkeet ja julkisivu (työt aloitetaan 11/12 2026, kesto 6 kk)",
+        "page": null
+      },
+      "status": "ok"
+    },
+    {
+      "id": "f_2",
+      "type": "renovation_upcoming",
+      "severity": "info",
+      "label": "Pipe renovation done 2024",
+      "detail": "Linjasaneeraus and bathroom renovation done in 2024: a plus.",
+      "est_cost_eur": null,
+      "year": 2024,
+      "source": {
+        "kind": "listing",
+        "url": "https://www.etuovi.com/kohde/20828740",
+        "quote": "linjasaneeraus ja märkätilojen peruskorjaus vuonna 2024",
+        "page": null
+      },
+      "status": "ok"
+    },
+    {
+      "id": "f_3",
+      "type": "street_works",
+      "severity": "warn",
+      "label": "Street works nearby",
+      "detail": "(pending news search)",
+      "est_cost_eur": null,
+      "year": null,
+      "source": {
+        "kind": "news",
+        "url": null,
+        "quote": null,
+        "page": null
+      },
+      "status": "pending"
+    }
+  ],
+  "status": "ready",
+  "_note": "score and flags are ILLUSTRATIVE (made up for layout), not real model output"
+}

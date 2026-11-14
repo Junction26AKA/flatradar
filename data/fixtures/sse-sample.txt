@@ -1,0 +1,36 @@
+event: hello
+data: {"server_time":"2026-11-14T10:00:00.000Z"}
+
+event: listing.new
+data: {"listing":{"_id":"mock:kallio-2h","portal":"mock","kind":"sale","url":"http://localhost:3000/mock/kallio-2h","address":"Example street 10, Helsinki","postcode":"00530","district":"Kallio","loc":{"type":"Point","coordinates":[24.95,60.184]},"rooms":2,"m2":48,"year":1928,"price":259000,"debt_free_price":262000,"first_seen_at":"2026-11-14T10:00:01.000Z","score":null,"flags":[],"status":"enriching"}}
+
+event: call.start
+data: {"id":"a-1","listing_id":"mock:kallio-2h","endpoint":"web.scrape","label":"extract listing","queued_at":"2026-11-14T10:00:01.010Z","started_at":"2026-11-14T10:00:01.010Z"}
+
+event: call.start
+data: {"id":"a-2","listing_id":"mock:kallio-2h","endpoint":"news.search","label":"street works near Example street","queued_at":"2026-11-14T10:00:01.011Z","started_at":"2026-11-14T10:00:01.012Z"}
+
+event: call.start
+data: {"id":"a-3","listing_id":"mock:kallio-2h","endpoint":"parse.document","label":"isännöitsijäntodistus.pdf","queued_at":"2026-11-14T10:00:01.012Z","started_at":"2026-11-14T10:00:01.013Z"}
+
+event: call.end
+data: {"id":"a-2","listing_id":"mock:kallio-2h","endpoint":"news.search","label":"street works near Example street","started_at":"2026-11-14T10:00:01.012Z","ms":1240,"status":"ok","request_id":"example"}
+
+event: call.end
+data: {"id":"a-1","listing_id":"mock:kallio-2h","endpoint":"web.scrape","label":"extract listing","started_at":"2026-11-14T10:00:01.010Z","ms":2850,"status":"ok","request_id":"example"}
+
+event: listing.updated
+data: {"id":"mock:kallio-2h","patch":{"score":{"fair_m2":6650,"fair_price":319200,"deal_pct":-0.179,"confidence":"medium","model":{"fair_m2":6600,"version":"illustrative","mae_pct":0.11},"comps":{"fair_m2":6700,"n":8,"radius_m":1000,"items":[]},"baseline":{"source":"Statistics Finland 13mu","postcode":"00530","room_type":"two-room","year":2025,"eur_m2":6400},"yield_pct":0.051,"scored_at":"2026-11-14T10:00:04.100Z"}}}
+
+event: call.end
+data: {"id":"a-3","listing_id":"mock:kallio-2h","endpoint":"parse.document","label":"isännöitsijäntodistus.pdf","started_at":"2026-11-14T10:00:01.013Z","ms":5400,"status":"ok","request_id":"example"}
+
+event: listing.updated
+data: {"id":"mock:kallio-2h","patch":{"status":"ready","flags":[{"id":"f_1","type":"pipe_renovation","severity":"high","label":"Pipe renovation planned 2027","detail":"Housing company manager's certificate lists linjasaneeraus in 2027.","est_cost_eur":45000,"year":2027,"source":{"kind":"pdf","url":"http://localhost:3000/mock/kallio-2h/isannoitsijantodistus.pdf","quote":"Linjasaneeraus 2027, arvio 900 €/m²","page":2},"status":"ok"},{"id":"f_2","type":"street_works","severity":"warn","label":"Street works on the block","detail":"Example news: tram track works until 2027.","est_cost_eur":null,"year":2027,"source":{"kind":"news","url":"https://example.com/news","quote":null,"page":null},"status":"ok"}]}}
+
+event: alert.sent
+data: {"listing_id":"mock:kallio-2h","to":"a***@gmail.com","at":"2026-11-14T10:00:07.000Z"}
+
+event: listing.price_drop
+data: {"id":"etuovi:20828740","old_price":329000,"new_price":315000,"at":"2026-11-14T10:05:00.000Z"}
+
