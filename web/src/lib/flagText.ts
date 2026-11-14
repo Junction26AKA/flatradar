@@ -44,6 +44,7 @@ const RULES: [RegExp, (m: RegExpMatchArray) => string][] = [
 
 export function flagLabel(f: Flag): string {
   if (formatLang() === 'en') return f.label;
+  if (f.label_fi) return f.label_fi; // Gemini flags come with their own Finnish label
   for (const [re, fi] of RULES) {
     const m = f.label.match(re);
     if (m) return fi(m);

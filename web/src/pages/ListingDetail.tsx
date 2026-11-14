@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { AnalystPanel } from '../components/AnalystPanel';
 import { getListing } from '../lib/api';
 import { flagLabel } from '../lib/flagText';
 import { dealLabel, eur, factsLine } from '../lib/format';
@@ -11,7 +12,7 @@ import type { ListingDetail as Detail } from '../lib/types';
 export default function ListingDetail() {
   const { id = '' } = useParams();
   const { byId, calls } = useFeed();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [detail, setDetail] = useState<Detail | null | undefined>(undefined);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function ListingDetail() {
   const callRows = calls[id]?.length ? calls[id] : detail?.calls ?? [];
 
   return (
+    <>
     <div className="detail-scaffold">
       <p className="t-eyebrow muted">{l._id}</p>
       <h2 className="t-h3">{l.address}</h2>
@@ -34,7 +36,9 @@ export default function ListingDetail() {
         {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)} · ${t(`confidence.${l.score.confidence}`)}`}
       </p>
       <p className="t-body-s">{l.flags.map((f) => flagLabel(f) + (f.status === 'error' ? ` (${t('flag.failed')})` : f.status === 'pending' ? ` ${t('flag.checking')}` : '')).join(' · ') || t('detail.noFlags')}</p>
-      <p className="t-num-s muted">{t('detail.calls', { n: callRows.length })}</p>
+      <p className="t-num-s muted">{t('detail.calls', { n: callRows.filter((c) => !c.endpoint.startsWith('gemini')).length })}</p>
     </div>
+    <AnalystPanel listing={l} lang={lang} />
+    </>
   );
 }

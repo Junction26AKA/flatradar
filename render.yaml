@@ -34,6 +34,8 @@ services:
         sync: false
       - key: SCORER_URL
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
 
   # Kevin's fair-value model (model/serve.py). Node calls it via SCORER_URL and falls back to its own
   # comparables score if it's slow (>3 s) or down. Kept awake by the Node /api/health route, which pings it.

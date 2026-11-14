@@ -43,8 +43,34 @@ export interface Flag {
   est_cost_eur: number | null;
   year: number | null;
   source: { kind: 'listing' | 'pdf' | 'news' | 'open_data'; url: string | null; quote: string | null; page: number | null } | null;
+  /** Present when the Gemini analyst found it. */
+  origin?: 'gemini';
+  /** Finnish label and detail (Gemini flags only). */
+  label_fi?: string;
+  detail_fi?: string | null;
   status: 'ok' | 'pending' | 'error';
 }
+
+/** Gemini analyst, docs/contracts.md §3b. Arrives a few seconds after the listing is `ready`. */
+export type Insight =
+  | { status: 'pending'; at?: string; run?: string }
+  | { status: 'error'; error: string; at: string }
+  | {
+      status: 'ok';
+      headline: string;
+      summary: string;
+      questions: string[];
+      /** The same texts in Finnish, written by Gemini. */
+      fi?: { headline: string | null; summary: string | null; questions: string[] };
+      hidden_cost_eur: number | null;
+      real_cost_eur: number | null;
+      grounding: { checked: number; kept: number; skipped?: number; dropped: number };
+      sources: number;
+      model: string;
+      tokens: number | null;
+      ms: number;
+      at: string;
+    };
 
 export interface PricePoint {
   at: string;
@@ -94,6 +120,7 @@ export interface Listing {
   price_history?: PricePoint[];
   score: Score | null;
   flags: Flag[];
+  insight?: Insight | null;
   status: 'new' | 'enriching' | 'ready';
 }
 

@@ -9,7 +9,7 @@ import getDb, { client } from './lib/db.mjs';
 import { bus } from './lib/bus.mjs';
 import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, processSearchPage } from './lib/monitors.mjs';
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
-import { enrichFromCard, resumeStuck } from './lib/enrich.mjs';
+import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
@@ -127,14 +127,14 @@ async function route(req, res) {
     const kind = url.searchParams.get('kind');
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 500);
     const q = { ...(kind ? { kind } : {}), ...(url.searchParams.get('scored') ? { 'score.deal_pct': { $ne: null } } : {}) };
-    const items = await db.collection('listings').find(q).sort({ first_seen_at: -1 }).limit(limit).toArray();
+    const items = await db.collection('listings').find(q, { projection: { doc_extracts: 0 } }).sort({ first_seen_at: -1 }).limit(limit).toArray();
     return send(res, 200, { items });
   }
 
   let m;
   if ((m = p.match(/^\/api\/listings\/(.+)$/)) && req.method === 'GET') {
     const id = decodeURIComponent(m[1]);
-    const listing = await db.collection('listings').findOne({ _id: id });
+    const listing = await db.collection('listings').findOne({ _id: id }, { projection: { doc_extracts: 0 } });
     if (!listing) return send(res, 404, { error: 'not found' });
     const calls = await db.collection('calls').find({ listing_id: id }).sort({ started_at: 1 }).limit(200).project({ _id: 0 }).toArray();
     return send(res, 200, { ...listing, calls });
@@ -230,6 +230,12 @@ server.listen(PORT, HOST, () => {
   log(`FlatRadar on http://${HOST}:${PORT} (public: ${PUBLIC_URL ?? 'none'})`);
   // Finish anything a previous instance left half-done (free instances restart without warning).
   setTimeout(() => resumeStuck().then((n) => n && log(`resumed ${n} half-enriched listings`)).catch((e) => log('resume failed', e.message)), 5_000);
+  // Gemini runs a previous instance left pending (anything started before this process), then a sweep every
+  // 3 min for runs that died since (a deploy can stop the old instance mid-run).
+  const startedAt = new Date();
+  const sweep = (before) => resumeInsights({ before }).then((n) => n && log(`retried ${n} unfinished Gemini analyses`)).catch((e) => log('insight resume failed', e.message));
+  setTimeout(() => sweep(startedAt), 10_000);
+  setInterval(() => sweep(new Date(Date.now() - 2 * 60 * 1000)), 3 * 60 * 1000).unref();
 });
 
 const stop = async () => { server.close(); for (const r of clients) r.end(); await client.close(); process.exit(0); };
