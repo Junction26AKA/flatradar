@@ -56,3 +56,6 @@
   60% { transform: translate(-50%, -40%) scale(1.15); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1); }
 }
+
+/* Saved-search circles (Searches → "draw areas on the map"), under the pins. */
+.lmap__area { fill: var(--bg-brand); fill-opacity: 0.08; stroke: var(--border-brand); stroke-width: 2; stroke-dasharray: 6 5; }

@@ -1,0 +1,12 @@
+.apick { display: grid; gap: var(--space-2); }
+.apick__map { height: 220px; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--border); }
+.apick__map .lmap { height: 100%; width: 100%; cursor: crosshair; }
+.apick__map.is-full .lmap { cursor: grab; }
+.apick__hint { margin: 0; font-weight: 400; }
+.apick__pin { fill: var(--bg-brand); fill-opacity: 1; stroke: var(--bg-surface); stroke-width: 2; }
+.apick__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.apick__list li { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: var(--space-2); }
+/* the form styles give every input a fixed height and border; a range slider needs neither */
+.scard--form .apick__list input[type='range'] { height: auto; padding: 0; border: 0; background: none; accent-color: var(--bg-brand); }
+.apick__km { min-width: 4.5em; text-align: right; }
+.apick__rm { font-size: 18px; line-height: 1; color: var(--deal-bad); padding: 2px 6px; }

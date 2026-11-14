@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react';
-import { getListings, type Source } from './api';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
+import { getListing, getListings, type Source } from './api';
 import { useStream } from './stream';
 import type { CallEnd, CallStart, Kind, Listing, StreamEvent } from './types';
 
@@ -31,6 +31,7 @@ export interface FeedState {
 
 type Action =
   | { type: 'loaded'; items: Listing[]; source: Source }
+  | { type: 'merge'; items: Listing[] }
   | { type: 'event'; event: StreamEvent };
 
 const initial: FeedState = { byId: {}, order: [], calls: {}, priceChanges: {}, alerts: [], fresh: {}, source: null, loading: true };
@@ -47,6 +48,12 @@ function reducer(s: FeedState, a: Action): FeedState {
       if (l.last_price_drop && !priceChanges[l._id]) priceChanges[l._id] = l.last_price_drop;
     }
     return { ...s, byId, priceChanges, order: Object.keys(byId).sort(byNewest(byId)), source: a.source, loading: false };
+  }
+  if (a.type === 'merge') {
+    // Single listings fetched on demand (e.g. a saved flat older than the newest-150 window).
+    const byId = { ...s.byId };
+    for (const l of a.items) byId[l._id] = { ...l, ...byId[l._id] };
+    return { ...s, byId, order: Object.keys(byId).sort(byNewest(byId)) };
   }
   const e = a.event;
   switch (e.type) {
@@ -89,6 +96,7 @@ function reducer(s: FeedState, a: Action): FeedState {
 }
 
 const Ctx = createContext<FeedState | null>(null);
+const EnsureCtx = createContext<(ids: string[]) => void>(() => {});
 
 /** Holds every listing we know about: the initial GET /api/listings plus everything from /stream. */
 export function FeedProvider({ children }: { children: ReactNode }) {
@@ -107,7 +115,20 @@ export function FeedProvider({ children }: { children: ReactNode }) {
     return () => ac.abort();
   }, []);
   useStream((event) => dispatch({ type: 'event', event }));
-  return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
+  // Fetch listings we don't have yet (once per id per session). Waits for the first list load.
+  const requested = useRef(new Set<string>());
+  const loadedRef = useRef(state);
+  loadedRef.current = state;
+  const ensure = useCallback((ids: string[]) => {
+    const s = loadedRef.current;
+    if (s.loading || s.source === 'fixtures') return;
+    const missing = ids.filter((id) => !s.byId[id] && !requested.current.has(id));
+    if (!missing.length) return;
+    missing.forEach((id) => requested.current.add(id));
+    Promise.all(missing.map((id) => getListing(id).then((r) => (r.source === 'live' ? r.data : null)).catch(() => null)))
+      .then((rs) => { const items = rs.filter((x): x is NonNullable<typeof x> => !!x); if (items.length) dispatch({ type: 'merge', items }); });
+  }, []);
+  return <EnsureCtx.Provider value={ensure}><Ctx.Provider value={state}>{children}</Ctx.Provider></EnsureCtx.Provider>;
 }
 
 export function useFeed(): FeedState {
@@ -119,4 +140,12 @@ export function useFeed(): FeedState {
 export function useListings(kind?: Kind): Listing[] {
   const { byId, order } = useFeed();
   return useMemo(() => order.map((id) => byId[id]).filter((l) => !kind || l.kind === kind), [byId, order, kind]);
+}
+
+/** Makes sure these listings are in the store, fetching any that the initial list didn't include. */
+export function useEnsureListings(ids: string[] | undefined) {
+  const ensure = useContext(EnsureCtx);
+  const { loading } = useFeed();
+  const key = (ids ?? []).join('|');
+  useEffect(() => { if (!loading && ids?.length) ensure(ids); }, [key, loading, ensure]); // eslint-disable-line react-hooks/exhaustive-deps
 }

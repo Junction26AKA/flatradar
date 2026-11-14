@@ -185,11 +185,20 @@ export interface ListingDetail extends Listing {
   calls: CallEnd[];
 }
 
+/** A circle dropped on the map in a saved search. */
+export interface SearchArea {
+  lat: number;
+  lng: number;
+  radius_m: number;
+}
+
 export interface SavedSearch {
   kind: Kind;
   max_price: number | null;
   min_rooms: number | null;
   postcodes: string[];
+  /** Map circles. Postcodes and areas are alternatives: a listing in any postcode OR inside any circle matches. */
+  areas?: SearchArea[];
   /** e.g. -0.10 = alert when at least 10% below fair */
   min_deal: number | null;
 }

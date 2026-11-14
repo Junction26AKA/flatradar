@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useI18n, type T } from '../lib/i18n';
@@ -6,9 +6,12 @@ import { errorMessage, isMessageKey, type MessageKey } from '../lib/messages';
 import { ago, eur, shortAddress } from '../lib/format';
 import { matchesSearch } from '../lib/match';
 import { useFeed } from '../lib/store';
-import type { Kind, SavedSearch } from '../lib/types';
+import type { Kind, SavedSearch, SearchArea } from '../lib/types';
 import { useNow } from '../lib/useNow';
 import './searches.css';
+
+const AreaPicker = lazy(() => import('../components/AreaPicker'));
+const kmText = (m: number) => (m / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 /** The server keeps at most this many searches per user (POST /api/users slices to 5). */
 const MAX_SEARCHES = 5;
@@ -19,7 +22,7 @@ const dealOptions = (t: T): { value: string; label: string }[] => [
   ...[5, 10, 15, 20].map((p) => ({ value: String(p), label: t('sr.optPct', { p }) })),
 ];
 
-const EMPTY: SavedSearch = { kind: 'sale', max_price: null, min_rooms: null, postcodes: [], min_deal: -0.1 };
+const EMPTY: SavedSearch = { kind: 'sale', max_price: null, min_rooms: null, postcodes: [], areas: [], min_deal: -0.1 };
 
 /** "Buy · 2+ rooms · up to €300,000" */
 function title(s: SavedSearch, t: T) {
@@ -98,7 +101,9 @@ export default function Searches() {
               <p className="t-eyebrow scard__kind">{t(s.kind === 'rent' ? 'kind.forRent' : 'kind.forSale')}</p>
               <h2 className="t-h3">{title(s, t)}</h2>
               <div className="scard__codes">
-                {s.postcodes.length ? s.postcodes.map((p) => <span key={p} className="scard__code t-num-s">{p}</span>) : <span className="muted t-body-s">{t('sr.anywhere')}</span>}
+                {s.postcodes.map((p) => <span key={p} className="scard__code t-num-s">{p}</span>)}
+                {(s.areas ?? []).map((a, j) => <span key={`a${j}`} className="scard__code scard__code--area t-num-s">{t('sr.areaChip', { km: kmText(a.radius_m) })}</span>)}
+                {!s.postcodes.length && !s.areas?.length && <span className="muted t-body-s">{t('sr.anywhere')}</span>}
               </div>
               <p className="t-body-s muted">{dealText(s, t)}</p>
               <p className="scard__count t-num-s">
@@ -154,6 +159,7 @@ function SearchForm({ initial, heading, busy, onSave, onCancel }: {
   const { t } = useI18n();
   const [kind, setKind] = useState<Kind>(initial.kind);
   const [badCodes, setBadCodes] = useState<string[]>([]);
+  const [areas, setAreas] = useState<SearchArea[]>(initial.areas ?? []);
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -168,6 +174,7 @@ function SearchForm({ initial, heading, busy, onSave, onCancel }: {
       max_price: Number(String(f.get('max_price')).replace(/[^\d]/g, '')) || null,
       min_rooms: Number(f.get('min_rooms')) || null,
       postcodes: [...new Set(raw)],
+      areas,
       min_deal: deal === 'any' ? null : -Number(deal) / 100,
     });
   }
@@ -201,6 +208,12 @@ function SearchForm({ initial, heading, busy, onSave, onCancel }: {
         <input name="postcodes" defaultValue={initial.postcodes.join(', ')} placeholder={t('sr.postcodesPh')} aria-invalid={badCodes.length > 0} />
         {badCodes.length > 0 && <span className="sform__err">{t('sr.badCodes', { c: badCodes.join(', ') })}</span>}
       </label>
+      <div className="sform__areas">
+        <span className="sform__label">{t('sr.areas')}</span>
+        <Suspense fallback={<div className="apick__map" />}>
+          <AreaPicker value={areas} onChange={setAreas} />
+        </Suspense>
+      </div>
       <label>
         {t('sr.emailMe')}
         <select name="min_deal" defaultValue={dealDefault}>

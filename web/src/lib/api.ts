@@ -58,7 +58,7 @@ export async function getHealth(signal?: AbortSignal): Promise<Result<Health | n
 }
 
 // ---------- auth (cookie session, same origin; docs/contracts.md §4) ----------
-export interface ApiUser { id: string; email: string; name: string | null; searches: SavedSearch[] }
+export interface ApiUser { id: string; email: string; name: string | null; searches: SavedSearch[]; favourites?: string[] }
 
 /** JSON request that throws HttpError with the server's `{ error }` message. status 0 = server unreachable. */
 async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -99,6 +99,10 @@ export const postSession = (email: string, password: string) =>
   send<{ user: ApiUser }>('POST', '/api/session', { email, password }).then((r) => r.user);
 
 export const deleteSession = () => send<{ ok: true }>('DELETE', '/api/session');
+
+/** POST/DELETE /api/favourites/:id → the user's favourites after the change. */
+export const setFavourite = (id: string, on: boolean) =>
+  send<{ favourites: string[] }>(on ? 'POST' : 'DELETE', `/api/favourites/${encodeURIComponent(id)}`).then((r) => r.favourites);
 
 /** Stage demo: publish the mock flat and trigger the monitor. */
 export async function publishMock(preset = 'kallio-2h'): Promise<{ listing_id: string }> {

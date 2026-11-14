@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnalystPanel } from '../components/AnalystPanel';
+import { FavButton } from '../components/FavButton';
 import { ListingPhotos } from '../components/ListingPhotos';
 import { getListing } from '../lib/api';
 import { flagLabel } from '../lib/flagText';
@@ -37,11 +38,14 @@ export default function ListingDetail() {
       <p className="t-eyebrow muted">{l._id}</p>
       <h2 className="t-h3">{l.address}</h2>
       <p className="t-body-s muted">{factsLine(l)}</p>
-      {l.url && PORTAL_NAMES[l.portal] && (
-        <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
-          {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
-        </a>
-      )}
+      <div className="detail-actions">
+        <FavButton id={l._id} variant="labelled" />
+        {l.url && PORTAL_NAMES[l.portal] && (
+          <a className="btn btn--ghost btn--s" href={l.url} target="_blank" rel="noreferrer">
+            {t('detail.openPortal', { site: PORTAL_NAMES[l.portal] })}
+          </a>
+        )}
+      </div>
       <p className="t-num-m">
         {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)} · ${t(`confidence.${l.score.confidence}`)}`}
       </p>

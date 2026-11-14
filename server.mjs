@@ -23,6 +23,7 @@ const WEB_DIR = path.resolve('web/dist');
 // Client-side routes: these paths get web/dist/index.html so deep links and reloads work.
 const SPA_ROUTE = /^\/(?:app(?:\/.*)?|signin\/?)$/;
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const MAX_FAVOURITES = 200;
 const db = await getDb();
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
@@ -39,6 +40,23 @@ const readBody = (req, limit = 1_000_000) => new Promise((resolve, reject) => {
 });
 const readJson = async (req) => { const b = await readBody(req); return b.length ? JSON.parse(b.toString('utf8')) : {}; };
 const isAdmin = (req) => !ADMIN_TOKEN || req.headers['x-admin-token'] === ADMIN_TOKEN;
+
+/** Saved search as stored: drops unknown keys and keeps at most 5 valid map areas (radius 200 m – 20 km). */
+function cleanSearch(s) {
+  const areas = (Array.isArray(s?.areas) ? s.areas : [])
+    .filter((a) => Number.isFinite(a?.lat) && Number.isFinite(a?.lng) && Number.isFinite(a?.radius_m) && Math.abs(a.lat) <= 90 && Math.abs(a.lng) <= 180)
+    .slice(0, 5)
+    .map((a) => ({ lat: a.lat, lng: a.lng, radius_m: Math.min(20_000, Math.max(200, Math.round(a.radius_m))) }));
+  return {
+    kind: s?.kind === 'rent' ? 'rent' : 'sale',
+    max_price: Number(s?.max_price) || null,
+    min_rooms: Number(s?.min_rooms) || null,
+    postcodes: Array.isArray(s?.postcodes) ? s.postcodes.filter((p) => /^\d{5}$/.test(p)).slice(0, 30) : [],
+    areas,
+    ...(Array.isArray(s?.districts) ? { districts: s.districts.filter((d) => typeof d === 'string').slice(0, 30) } : {}),
+    min_deal: s?.min_deal == null || !Number.isFinite(Number(s.min_deal)) ? null : Number(s.min_deal),
+  };
+}
 
 // ---------- SSE hub ----------
 const clients = new Set();
@@ -160,11 +178,25 @@ async function route(req, res) {
       const me = await currentUser(req);
       if (!me || String(me._id) !== String(existing._id)) return send(res, 409, { error: 'account exists, sign in first' });
     }
-    const searches = Array.isArray(b.searches) ? b.searches.slice(0, 5) : [];
+    const searches = Array.isArray(b.searches) ? b.searches.slice(0, 5).map(cleanSearch) : [];
     const set = { name: b.name ?? null, searches, updated_at: new Date(), ...(b.password ? { password_hash: await hashPassword(b.password) } : {}) };
     const r = await db.collection('users').findOneAndUpdate({ email }, { $set: set, $setOnInsert: { email, created_at: new Date() } }, { upsert: true, returnDocument: 'after' });
     // Signing up with a password also signs you in.
     return send(res, 200, { id: r._id }, b.password ? { 'Set-Cookie': await startSession(r._id) } : {});
+  }
+
+  // Favourites (signed-in users): heart a listing to keep it, and get an email when its price drops.
+  if ((m = p.match(/^\/api\/favourites\/(.+)$/)) && (req.method === 'POST' || req.method === 'DELETE')) {
+    const me = await currentUser(req);
+    if (!me) return send(res, 401, { error: 'not signed in' });
+    const id = decodeURIComponent(m[1]);
+    if (id.length > 200) return send(res, 400, { error: 'bad id' });
+    if (req.method === 'POST' && (me.favourites ?? []).length >= MAX_FAVOURITES && !(me.favourites ?? []).includes(id)) {
+      return send(res, 400, { error: `you can save up to ${MAX_FAVOURITES} listings` });
+    }
+    const update = req.method === 'POST' ? { $addToSet: { favourites: id } } : { $pull: { favourites: id } };
+    const r = await db.collection('users').findOneAndUpdate({ _id: me._id }, { ...update, $set: { updated_at: new Date() } }, { returnDocument: 'after', projection: { favourites: 1 } });
+    return send(res, 200, { favourites: r?.favourites ?? [] });
   }
 
   // Sign-in (cookie session, same origin)

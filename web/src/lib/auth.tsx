@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { deleteSession, getMe, HttpError, postSession, postUser, type ApiUser } from './api';
+import { deleteSession, getMe, HttpError, postSession, postUser, setFavourite, type ApiUser } from './api';
 import type { SavedSearch } from './types';
 
 /**
@@ -27,6 +27,8 @@ interface AuthValue {
   signUp(input: { email: string; password: string; name?: string; searches: SavedSearch[] }): Promise<User>;
   signIn(email: string, password: string): Promise<User>;
   updateSearches(searches: SavedSearch[]): Promise<User>;
+  /** Heart / un-heart a listing. Optimistic: the UI flips at once and rolls back if the server refuses. */
+  toggleFavourite(id: string): Promise<void>;
   signOut(): Promise<void>;
 }
 
@@ -121,6 +123,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Signed in as the owner, so the server accepts the update without the password.
       await postUser({ email: user.email, name: user.name, searches });
       return commit({ ...user, searches })!;
+    },
+
+    toggleFavourite: async (id) => {
+      if (!user) throw new Error('not signed in');
+      const before = user.favourites ?? [];
+      const on = !before.includes(id);
+      const optimistic = { ...user, favourites: on ? [...before, id] : before.filter((x) => x !== id) };
+      commit(optimistic);
+      if (user.offline) { writeOffline(optimistic); return; }
+      try {
+        const favourites = await setFavourite(id, on);
+        setUser((u) => (u ? { ...u, favourites } : u));
+      } catch (e) {
+        setUser((u) => (u ? { ...u, favourites: before } : u));
+        throw e;
+      }
     },
 
     signOut: async () => {
