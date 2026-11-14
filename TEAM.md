@@ -68,6 +68,27 @@ You choose the stack. It must build to static files in `web/dist`, which Adam's 
 - **After the first deploy, or whenever `PUBLIC_URL` changes**, run `curl -X POST <PUBLIC_URL>/admin/monitors -H "x-admin-token: $ADMIN_TOKEN"`. This creates or re-points the monitors and stores their webhook secrets.
 - **Manual diff of a portal:** `curl -X POST <PUBLIC_URL>/admin/poll -H "x-admin-token: $ADMIN_TOKEN" -H 'content-type: application/json' -d '{"portal":"etuovi"}'`.
 
+## Weekend runbook (keep it running until Sun 10:00)
+**Check every few hours:**
+- `GET <PUBLIC_URL>/api/health`. `last_webhook_at` should be under ~1 h old during the day, and `listings` should grow.
+- **Credits:** Context.dev dashboard or `get-usage`. Expect roughly 50–150 per hour in the daytime; more than about 400 per hour means something is looping (check the `runs` collection for the same ids in `changed` again and again).
+- **Monitors:** each one should show `status: active` with no `webhook_failure`. Context.dev pauses a monitor whose webhook keeps failing.
+
+**What can break, and what to do:**
+| Symptom | Fix |
+|---|---|
+| Render instance asleep or restarted | The cron-job.org ping every 5 min plus the 10-min `/mock` monitor keep it awake. Half-finished listings are completed automatically on startup. |
+| `PUBLIC_URL` changed (new service or domain) | Re-run `POST /admin/monitors` (re-points all monitors and stores new secrets) |
+| Webhook 401s in the Render logs | Signing secrets out of sync: re-run `POST /admin/monitors` |
+| Credits draining | Pause the portal monitors (Context.dev dashboard or `update-monitor status=paused`) and look at `runs` |
+| Kevin's scorer down | Nothing to do: Node falls back to the comparables score |
+
+**Before the demo (Sun morning):**
+1. Open the dashboard 10 minutes early, so the instance is awake.
+2. Run `POST /mock/publish` once. Check that the card appears within ~20 s and the email arrives.
+3. Don't redeploy after the rehearsal.
+4. Fallback if the venue Wi-Fi fails: run locally with `PUBLIC_URL=` empty. The mock flow then uses the local path (no monitor, no PDF), with the card and flags in about 1 s.
+
 ## Adam: backend and infrastructure
 Ingestion (Etuovi for sale, Vuokraovi for rent), batch backfill, monitors and webhooks, enrichment fan-out (parse-document, news, company), flags, Mongo, the API and SSE, user alerts through SendGrid, the mock feed and `run-monitor-now`, and deploy. He'll post in chat when each part works:
 - the backfill has landed in `listings`
