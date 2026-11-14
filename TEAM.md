@@ -58,6 +58,16 @@ You choose the stack. It must build to static files in `web/dist`, which Adam's 
 - the email template is ready
 - demo slides: problem → live demo → how it works → MAE
 
+## Deploy (Render free tier)
+- `render.yaml` defines one free web service built from `main` (`npm ci`, `node server.mjs`, health check `/api/health`). Pushing to `main` redeploys it.
+- **Secrets** are set in the Render dashboard: `CONTEXT_DEV_API_KEY`, `MONGODB_URI`, `PUBLIC_URL` (the `https://….onrender.com` URL), `ADMIN_TOKEN`, and optionally `SENDGRID_*` and `SCORER_URL`.
+- **MongoDB Atlas → Network Access** must allow `0.0.0.0/0`, because Render's free tier has no fixed outbound IP.
+- **Keeping it awake:** free instances sleep after 15 minutes without requests. Two things keep it up:
+  - cron-job.org requests `GET <PUBLIC_URL>/api/health` every 5 minutes
+  - the Context.dev monitor on `/mock` runs every 10 minutes
+- **After the first deploy, or whenever `PUBLIC_URL` changes**, run `curl -X POST <PUBLIC_URL>/admin/monitors -H "x-admin-token: $ADMIN_TOKEN"`. This creates or re-points the monitors and stores their webhook secrets.
+- **Manual diff of a portal:** `curl -X POST <PUBLIC_URL>/admin/poll -H "x-admin-token: $ADMIN_TOKEN" -H 'content-type: application/json' -d '{"portal":"etuovi"}'`.
+
 ## Adam: backend and infrastructure
 Ingestion (Etuovi for sale, Vuokraovi for rent), batch backfill, monitors and webhooks, enrichment fan-out (parse-document, news, company), flags, Mongo, the API and SSE, user alerts through SendGrid, the mock feed and `run-monitor-now`, and deploy. He'll post in chat when each part works:
 - the backfill has landed in `listings`

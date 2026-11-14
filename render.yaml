@@ -1,0 +1,35 @@
+# Render Blueprint (free web service). Secrets are entered in the Render dashboard (sync: false).
+# Free instances sleep after 15 min without inbound requests: keep it awake with an external pinger
+# hitting /api/health every 5 min (see TEAM.md → Deploy).
+services:
+  - type: web
+    name: flatradar
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci
+    startCommand: node server.mjs
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"
+      - key: HOST
+        value: 0.0.0.0
+      - key: MONGODB_DB
+        value: flatradar
+      - key: CONTEXT_DEV_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: PUBLIC_URL
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM
+        sync: false
+      - key: SCORER_URL
+        sync: false

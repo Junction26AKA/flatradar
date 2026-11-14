@@ -19,6 +19,9 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
   "m2": 49.5, "year": 1972, "floor": 1, "floors_total": 6,
   "elevator": true, "sauna": true, "balcony": true, "condition": "Hyvä",
   "plot": "own" | "leased" | null, "energy_class": "E (2018)",
+  "tenure": "ownership" | "right_of_occupancy" | "part_ownership" | "hitas" | null,
+  "comparable": true,                 // false = deposit price (asumisoikeus), €0 enforcement sale or €/m² outlier.
+                                      // Train, score and pick comparables ONLY from comparable: true.
   // sale only (null for rent)
   "price": 329000, "debt_free_price": 329000, "debt_share": null,
   "fee_month": 198, "fee_m2": 4.0, "housing_company": "Asunto Oy …",
