@@ -32,4 +32,3 @@
 .analyst__quote { font-style: italic; color: var(--text-muted); overflow-wrap: anywhere; }
 .analyst__quote a { color: inherit; }
 .analyst__questions { padding-left: var(--space-6); display: grid; gap: var(--space-1); }
-.analyst__meta { overflow-wrap: anywhere; }
