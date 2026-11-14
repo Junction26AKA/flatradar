@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { canRenovate as renovatable, large, mediaPhotos, renovated, shareCardPath, thumb } from '../lib/cloudinary';
+import { canRenovate as renovatable, hasOptionalSteps, large, mediaPhotos, renovated, renovationChanges, thumb } from '../lib/cloudinary';
 import { flagLabel } from '../lib/flagText';
 import { eur } from '../lib/format';
 import { useI18n } from '../lib/i18n';
@@ -10,7 +10,7 @@ import './ListingPhotos.css';
 
 /**
  * Listing photos through Cloudinary: smart-cropped gallery, what AI Vision found in each photo, an on-demand
- * "after renovation" preview (generative replace) and the share card. Renders nothing for listings without photos.
+ * "after renovation" preview (generative replace) Renders nothing for listings without photos.
  */
 export function ListingPhotos({ listing: l }: { listing: Listing }) {
   const { t } = useI18n();
@@ -19,9 +19,12 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
   const photoFlags = (l.flags ?? []).filter((f) => f.origin === 'photos');
   const [sel, setSel] = useState(0);
   const [renovating, setRenovating] = useState(false);
+  // Which renovated version the slider is showing: the full one or the core-only fallback (null while generating).
+  const [shown, setShown] = useState<'full' | 'core' | null>(null);
 
   useEffect(() => { setSel(0); setRenovating(false); }, [l._id]);
   useEffect(() => setRenovating(false), [sel]);
+  useEffect(() => { if (!renovating) setShown(null); }, [renovating]);
 
   if (!media && !l.photos?.length) return null;
   if (!media || media.status === 'pending') {
@@ -53,12 +56,12 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
     <section className="photos" aria-labelledby="photos-h">
       <div className="photos__head">
         <h3 className="t-h3" id="photos-h">{t('ph.title')}</h3>
-        <span className="t-num-s muted">{t('ph.count', { n: photos.length })} · Cloudinary</span>
+        <span className="t-body-s muted">{t('ph.count', { n: photos.length })}</span>
       </div>
 
       <div className="photos__stage">
         {renovating ? (
-          <BeforeAfter cloud={cloud} photo={p} />
+          <BeforeAfter cloud={cloud} photo={p} onShown={setShown} />
         ) : (
           <CldImage
             key={p.public_id}
@@ -84,9 +87,17 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
             {renovating ? t('ph.original') : `✨ ${t('ph.renovate')}`}
           </button>
           {renovating && (
-            <p className="t-body-s muted">
-              {roomFlag?.est_cost_eur ? `${t('ph.cost', { c: eur(roomFlag.est_cost_eur) })}. ` : ''}{t('ph.disclaimer')}
-            </p>
+            <>
+              {shown && (
+                <p className="t-body-s">
+                  <span className="muted">{t('ph.changes')}</span>{' '}
+                  {renovationChanges(p, shown === 'core').map((c) => t(`ph.change.${c}`)).join(', ')}
+                </p>
+              )}
+              <p className="t-body-s muted">
+                {roomFlag?.est_cost_eur ? `${t('ph.cost', { c: eur(roomFlag.est_cost_eur) })}. ` : ''}{t('ph.disclaimer')}
+              </p>
+            </>
           )}
         </div>
       )}
@@ -123,7 +134,6 @@ export function ListingPhotos({ listing: l }: { listing: Listing }) {
         <p className="t-body-s muted">{t('ph.notAnalysed')}</p>
       )}
 
-      <ShareCard id={l._id} />
     </section>
   );
 }
@@ -134,36 +144,63 @@ function tagText(tag: string, flags: Flag[]) {
   return f ? flagLabel(f) : tag.replace(/_/g, ' ');
 }
 
+/** Retry an image URL while Cloudinary answers 423 (still generating), until it loads or `giveUpMs` passes. */
+function pollImage(base: string, giveUpMs: number, onLoad: (url: string) => void, onGiveUp: () => void) {
+  const until = Date.now() + giveUpMs;
+  let tries = 0, timer = 0, dead = false;
+  const attempt = () => {
+    const img = new Image();
+    const url = tries === 0 ? base : `${base}${base.includes('?') ? '&' : '?'}retry=${tries}`;
+    img.onload = () => !dead && onLoad(url);
+    img.onerror = () => {
+      if (dead) return;
+      tries++;
+      if (Date.now() > until) onGiveUp();
+      else timer = window.setTimeout(attempt, 4000);
+    };
+    img.src = url;
+  };
+  attempt();
+  return () => { dead = true; clearTimeout(timer); };
+}
+
+/** After this long without the full renovation, also ask for the core-only one (see RENOVATION_STEPS). */
+const CORE_FALLBACK_MS = 45_000;
+const GIVE_UP_MS = 150_000;
+
 /**
- * Before/after slider. The "after" is a Cloudinary generative replace, generated on the first request:
- * Cloudinary answers 423 while it works in the background, so we retry until the image loads.
+ * Before/after slider. The "after" is a chain of Cloudinary generative effects, generated on the first request:
+ * Cloudinary answers 423 while it works in the background, so we retry until the image loads. If the full
+ * version is slow (a target like tiles or a ceiling light isn't in the photo), the core-only one takes its place.
  */
-function BeforeAfter({ cloud, photo }: { cloud: string; photo: MediaPhoto }) {
+function BeforeAfter({ cloud, photo, onShown }: { cloud: string; photo: MediaPhoto; onShown: (v: 'full' | 'core') => void }) {
   const { t } = useI18n();
   const [pos, setPos] = useState(50);
   const before = useMemo(() => large(cloud, photo).toURL(), [cloud, photo]);
-  const afterBase = useMemo(() => renovated(cloud, photo)?.toURL() ?? null, [cloud, photo]);
   const [after, setAfter] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!afterBase) return;
+    const full = renovated(cloud, photo)?.toURL();
+    if (!full) return;
     setAfter(null); setFailed(false);
-    let tries = 0, timer = 0, dead = false;
-    const attempt = () => {
-      const img = new Image();
-      const url = tries === 0 ? afterBase : `${afterBase}${afterBase.includes('?') ? '&' : '?'}retry=${tries}`;
-      img.onload = () => !dead && setAfter(url);
-      img.onerror = () => {
-        if (dead) return;
-        if (++tries > 30) setFailed(true); // ~2 min
-        else timer = window.setTimeout(attempt, 4000);
-      };
-      img.src = url;
+    let settled = false, pending = 0;
+    const stops: (() => void)[] = [];
+    const show = (version: 'full' | 'core') => (url: string) => {
+      if (settled) return;
+      settled = true;
+      stops.forEach((stop) => stop());
+      setAfter(url);
+      onShown(version);
     };
-    attempt();
-    return () => { dead = true; clearTimeout(timer); };
-  }, [afterBase]);
+    const giveUp = () => { if (--pending === 0 && !settled) setFailed(true); };
+    const start = (url: string, version: 'full' | 'core', ms: number) => { pending++; stops.push(pollImage(url, ms, show(version), giveUp)); };
+
+    start(full, 'full', GIVE_UP_MS);
+    const core = hasOptionalSteps(photo) ? renovated(cloud, photo, { core: true })?.toURL() : undefined;
+    const fallback = core ? window.setTimeout(() => !settled && start(core, 'core', GIVE_UP_MS - CORE_FALLBACK_MS), CORE_FALLBACK_MS) : 0;
+    return () => { settled = true; clearTimeout(fallback); stops.forEach((stop) => stop()); };
+  }, [cloud, photo, onShown]);
 
   return (
     <div className="ba" style={{ aspectRatio: `${photo.width} / ${photo.height}` }}>
@@ -181,32 +218,6 @@ function BeforeAfter({ cloud, photo }: { cloud: string; photo: MediaPhoto }) {
           {failed ? t('ph.genFailed') : <><i className="chip__spin" aria-hidden="true" /> {t('ph.generating')}</>}
         </div>
       )}
-    </div>
-  );
-}
-
-function ShareCard({ id }: { id: string }) {
-  const { t } = useI18n();
-  const [copied, setCopied] = useState(false);
-  const [ok, setOk] = useState(true);
-  const path = shareCardPath(id);
-  const abs = typeof location !== 'undefined' ? `${location.origin}${path}` : path;
-  if (!ok) return null;
-  const share = async () => {
-    try { await navigator.share({ title: 'FlatRadar', url: abs }); } catch { /* cancelled */ }
-  };
-  return (
-    <div className="photos__share">
-      <h4 className="t-label">{t('ph.share')}</h4>
-      <img src={path} alt="" className="photos__card" width={600} height={315} loading="lazy" onError={() => setOk(false)} />
-      <p className="t-body-s muted">{t('ph.shareHint')}</p>
-      <div className="photos__shareBtns">
-        {'share' in navigator && <button type="button" className="btn btn--ghost btn--s" onClick={share}>{t('ph.shareBtn')}</button>}
-        <button type="button" className="btn btn--ghost btn--s" onClick={() => navigator.clipboard?.writeText(abs).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })}>
-          {copied ? t('ph.copied') : t('ph.copy')}
-        </button>
-        <a className="btn btn--ghost btn--s" href={path} target="_blank" rel="noreferrer">{t('ph.open')}</a>
-      </div>
     </div>
   );
 }

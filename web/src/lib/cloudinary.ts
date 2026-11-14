@@ -44,26 +44,53 @@ export const large = (cloud: string, p: MediaPhoto, w = 1400) =>
   optimise(cldFor(cloud).image(p.public_id).resize(limitFit().width(w).height(w)));
 
 /**
- * "After renovation" looks per room type: one consistent, current Nordic style (light oak, warm whites,
- * one muted colour accent), so the preview reads as a believable refresh rather than a different flat.
- * Each step is one generative effect on the original photo; `preserveGeometry` keeps the room's layout.
- * Two changes per room is where it starts to look renovated without drifting into a showroom render.
+ * What "See it renovated" means: a full cosmetic refresh of that room in one consistent, current Nordic style
+ * (light oak, soft sage-grey paint, sage cabinets, matte black or brushed brass details), not just one surface.
+ * Each step is a generative effect on the original photo, applied in order; `preserveGeometry` keeps the room's
+ * layout. `label` is the message key listed under the preview, so the user can see exactly what changed.
+ *
+ * `core` steps target something that is in every photo of that room type (floor, walls, kitchen cabinets).
+ * The others (tiles, vanity, doors, ceiling light) only work when the photo shows them: Cloudinary doesn't skip
+ * a replace whose target is missing, it stays at 423 "processing" indefinitely. So the web app asks for the full
+ * version and falls back to the core-only version if the full one isn't back in time (see ListingPhotos).
+ * Cloudinary runs the steps one after another, about 10-25 s each.
+ *
+ * Tiles only ever go on existing ceramic tiles in a bathroom: kitchens include open-plan living rooms, so a
+ * "wall tiles" prompt there would tile ordinary walls.
  */
-type RenoStep = { replace: string; with: string } | { recolor: string; to: string };
+type RenoStep = ({ replace: string; with: string } | { recolor: string; to: string }) & { label: RenoLabel; core?: true };
+export type RenoLabel = 'floor' | 'walls' | 'doors' | 'cabinets' | 'tiles' | 'vanity' | 'bathFloor' | 'light';
+const OAK_FLOOR: RenoStep = { replace: 'floor', with: 'wide light oak plank floor with a matte finish', label: 'floor', core: true };
+// Recolor prompt is plain 'walls': 'painted walls' never finished on some kitchen photos (stuck at 423 for 10+ min).
+// Soft sage grey: visibly not the old white, and stays neutral after the indoor colour correction.
+const PAINT: RenoStep = { recolor: 'walls', to: '#C5CABD', label: 'walls', core: true };
 export const RENOVATION_STEPS: Partial<Record<PhotoRoom, RenoStep[]>> = {
   kitchen: [
-    { replace: 'kitchen cabinet doors', with: 'matte sage green flat-panel kitchen cabinet doors with slim brushed brass handles' },
-    { replace: 'kitchen wall tiles above the worktop', with: 'glossy off-white handmade rectangular wall tiles' },
+    { replace: 'kitchen cabinet doors', with: 'matte sage green flat-panel kitchen cabinet doors with slim brushed brass handles', label: 'cabinets', core: true },
+    OAK_FLOOR,
+    PAINT,
   ],
   bathroom: [
-    { replace: 'bathroom wall tiles', with: 'large warm white matte porcelain wall tiles with thin light grey grout' },
-    { replace: 'washbasin and the cabinet under it', with: 'a floating light oak vanity with a white ceramic basin and a brushed brass tap' },
+    { replace: 'ceramic wall tiles', with: 'large warm white matte porcelain wall tiles with thin light grey grout', label: 'tiles' },
+    { replace: 'bathroom floor', with: 'dark grey matte stone-look floor tiles', label: 'bathFloor', core: true },
+    { replace: 'washbasin and the cabinet under it', with: 'a floating light oak vanity with a white ceramic basin and a brushed brass tap', label: 'vanity' },
+    PAINT, // on tiled walls this only changes their colour, never adds tiles
   ],
   room: [
-    { replace: 'floor', with: 'light oak herringbone parquet floor' },
-    { recolor: 'walls', to: '#E8E1D5' },
+    OAK_FLOOR,
+    PAINT,
+    { replace: 'interior doors', with: 'white flat-panel interior doors with matte black handles', label: 'doors' },
+    { replace: 'ceiling light', with: 'a large white paper globe pendant lamp', label: 'light' },
   ],
 };
+
+const stepsFor = (p: MediaPhoto, core: boolean) => (RENOVATION_STEPS[p.room] ?? []).filter((s) => !core || s.core);
+
+/** Whether the full renovation has steps beyond the core ones (so a core-only fallback is worth asking for). */
+export const hasOptionalSteps = (p: MediaPhoto) => stepsFor(p, false).length > stepsFor(p, true).length;
+
+/** What the preview changes for this photo, in order (empty when it gets no preview). */
+export const renovationChanges = (p: MediaPhoto, core = false): RenoLabel[] => stepsFor(p, core).map((s) => s.label);
 
 /**
  * Whether a photo gets the renovation preview: an interior room we know about. `room_by` is set by the photo
@@ -72,10 +99,13 @@ export const RENOVATION_STEPS: Partial<Record<PhotoRoom, RenoStep[]>> = {
  */
 export const canRenovate = (p: MediaPhoto) => !!RENOVATION_STEPS[p.room] && p.room_by != null;
 
-/** Same photo, renovated by generative AI. Expensive (≈2 × 120 transformations) and slow the first time, so only on demand. */
-export function renovated(cloud: string, p: MediaPhoto, w = 1400): CloudinaryImage | null {
-  const steps = RENOVATION_STEPS[p.room];
-  if (!steps || !canRenovate(p)) return null;
+/**
+ * Same photo, renovated by generative AI: every step for its room, or only the `core` ones.
+ * Expensive (≈120 transformations per step) and slow the first time, so only on demand.
+ */
+export function renovated(cloud: string, p: MediaPhoto, { core = false, w = 1400 } = {}): CloudinaryImage | null {
+  const steps = stepsFor(p, core);
+  if (!steps.length || !canRenovate(p)) return null;
   let img = cldFor(cloud).image(p.public_id);
   for (const s of steps) {
     img = 'replace' in s
@@ -86,5 +116,3 @@ export function renovated(cloud: string, p: MediaPhoto, w = 1400): CloudinaryIma
   return optimise(img.adjust(improve().mode('indoor')).resize(limitFit().width(w).height(w)));
 }
 
-/** Same-origin share card (the server redirects to the Cloudinary overlay URL). */
-export const shareCardPath = (id: string) => `/api/listings/${encodeURIComponent(id)}/card`;

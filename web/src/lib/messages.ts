@@ -9,6 +9,11 @@ type Msg = string | ((v: any) => string); // eslint-disable-line @typescript-esl
 type Pair = { en: Msg; fi: Msg };
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+/** English ordinal: 1st, 2nd, 3rd, 11th, 22nd. */
+const ordinal = (n: number) => {
+  const t = n % 100;
+  return `${n}${t >= 11 && t <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+};
 
 export const MESSAGES = {
   // ---- shared
@@ -52,6 +57,10 @@ export const MESSAGES = {
   'ago.min': { en: (v: { n: number }) => `${v.n} min ago`, fi: (v: { n: number }) => `${v.n} min sitten` },
   'ago.h': { en: (v: { n: number }) => `${v.n} h ago`, fi: (v: { n: number }) => `${v.n} h sitten` },
   'ago.d': { en: (v: { n: number }) => `${v.n} d ago`, fi: (v: { n: number }) => `${v.n} pv sitten` },
+  'unit.floor': {
+    en: (v: { n: number; of?: number | null }) => `${v.n === 0 ? 'Ground' : ordinal(v.n)} floor${v.of ? ` out of ${v.of}` : ''}`,
+    fi: (v: { n: number; of?: number | null }) => `${v.n}. kerros${v.of ? ` / ${v.of}` : ''}`,
+  },
   'unit.month': { en: '/mo', fi: '/kk' },
   'unit.rooms': { en: (v: { n: number }) => `${v.n} ${plural(v.n, 'room', 'rooms')}`, fi: (v: { n: number }) => `${v.n} ${v.n === 1 ? 'huone' : 'huonetta'}` },
 
@@ -156,9 +165,10 @@ export const MESSAGES = {
   'detail.notFound': { en: 'Listing not found.', fi: 'Ilmoitusta ei löytynyt.' },
   'detail.back': { en: 'Back to feed', fi: 'Takaisin syötteeseen' },
   'detail.openPortal': { en: (v: { site: string }) => `View on ${v.site} ↗`, fi: (v: { site: string }) => `Avaa ${v.site} ↗` },
-  'detail.fair': {
-    en: (v: { price: string; pct: number }) => `Fair price ${v.price} · ${v.pct === 0 ? 'asking matches it' : `asking is ${Math.abs(v.pct)}% ${v.pct < 0 ? 'below' : 'above'}`}`,
-    fi: (v: { price: string; pct: number }) => `Käypä hinta ${v.price} · ${v.pct === 0 ? 'pyyntihinta vastaa sitä' : `pyyntihinta on ${Math.abs(v.pct)} % ${v.pct < 0 ? 'alle' : 'yli'}`}`,
+  'detail.fairLabel': { en: 'Fair price', fi: 'Käypä hinta' },
+  'detail.fairVs': {
+    en: (v: { pct: number }) => (v.pct === 0 ? 'asking matches it' : `asking is ${Math.abs(v.pct)}% ${v.pct < 0 ? 'below' : 'above'}`),
+    fi: (v: { pct: number }) => (v.pct === 0 ? 'pyyntihinta vastaa sitä' : `pyyntihinta on ${Math.abs(v.pct)} % ${v.pct < 0 ? 'alle' : 'yli'}`),
   },
 
   // ---- photos (Cloudinary)
@@ -173,12 +183,21 @@ export const MESSAGES = {
   'ph.nothing': { en: 'Nothing to flag in the photos.', fi: 'Kuvissa ei ollut huomautettavaa.' },
   'ph.renovate': { en: 'See it renovated', fi: 'Näytä remontoituna' },
   'ph.original': { en: 'Back to the original', fi: 'Takaisin alkuperäiseen' },
-  'ph.generating': { en: 'Cloudinary generative AI is redoing this room (about 15 s the first time)…', fi: 'Cloudinaryn generatiivinen tekoäly remontoi huonetta (ensimmäisellä kerralla noin 15 s)…' },
+  'ph.generating': { en: 'Cloudinary generative AI is redoing this room (up to a minute the first time)…', fi: 'Cloudinaryn generatiivinen tekoäly remontoi huonetta (ensimmäisellä kerralla jopa minuutin)…' },
   'ph.genFailed': { en: 'The renovated version could not be generated.', fi: 'Remontoitua versiota ei saatu luotua.' },
   'ph.before': { en: 'Now', fi: 'Nyt' },
   'ph.after': { en: 'After renovation (AI)', fi: 'Remontin jälkeen (tekoäly)' },
   'ph.slider': { en: 'Drag to compare before and after', fi: 'Vedä vertaillaksesi ennen ja jälkeen' },
   'ph.cost': { en: (v: { c: string }) => `Rough cost of this kind of renovation: ${v.c}`, fi: (v: { c: string }) => `Tällaisen remontin karkea hinta: ${v.c}` },
+  'ph.changes': { en: 'What the preview changes:', fi: 'Mitä esikatselu muuttaa:' },
+  'ph.change.floor': { en: 'light oak floor', fi: 'vaalea tammilattia' },
+  'ph.change.walls': { en: 'repainted walls', fi: 'maalatut seinät' },
+  'ph.change.doors': { en: 'new interior doors', fi: 'uudet väliovet' },
+  'ph.change.light': { en: 'new ceiling light', fi: 'uusi kattovalaisin' },
+  'ph.change.cabinets': { en: 'new cabinet doors', fi: 'uudet kaapinovet' },
+  'ph.change.tiles': { en: 'new wall tiles', fi: 'uudet seinälaatat' },
+  'ph.change.bathFloor': { en: 'new floor tiles', fi: 'uudet lattialaatat' },
+  'ph.change.vanity': { en: 'new vanity and basin', fi: 'uusi allaskaappi ja allas' },
   'ph.disclaimer': { en: 'An AI illustration of what new surfaces and finishes could look like, not a quote or a plan.', fi: 'Tekoälyn havainnekuva uusista pinnoista ja materiaaleista, ei tarjous tai suunnitelma.' },
   'ph.room.kitchen': { en: 'Kitchen', fi: 'Keittiö' },
   'ph.room.bathroom': { en: 'Bathroom', fi: 'Kylpyhuone' },
@@ -186,12 +205,6 @@ export const MESSAGES = {
   'ph.room.plan': { en: 'Floor plan', fi: 'Pohjapiirros' },
   'ph.room.room': { en: 'Room', fi: 'Huone' },
   'ph.room.other': { en: 'Photo', fi: 'Kuva' },
-  'ph.share': { en: 'Share card', fi: 'Jakokortti' },
-  'ph.shareHint': { en: 'Made on the fly by Cloudinary from the photo, the deal and the price. The alert email uses the same card.', fi: 'Cloudinary tekee kortin lennosta kuvasta, hinnasta ja arviosta. Hälytyssähköposti käyttää samaa korttia.' },
-  'ph.copy': { en: 'Copy image link', fi: 'Kopioi kuvan linkki' },
-  'ph.copied': { en: 'Link copied', fi: 'Linkki kopioitu' },
-  'ph.open': { en: 'Open image', fi: 'Avaa kuva' },
-  'ph.shareBtn': { en: 'Share…', fi: 'Jaa…' },
 
   // ---- sign in
   'si.brand': {
