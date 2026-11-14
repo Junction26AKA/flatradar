@@ -67,10 +67,10 @@ export const RENOVATION_STEPS: Partial<Record<PhotoRoom, RenoStep[]>> = {
 
 /**
  * Whether a photo gets the renovation preview: an interior room we know about. `room_by` is set by the photo
- * pass when Gemini (or AI Vision) actually classified the photo; older data without it only counts when AI
- * Vision read the photo, since unread photos used to default to 'room'.
+ * pass when Gemini (or AI Vision, on a positive tag) actually classified the photo. Older data without it is
+ * not trusted, even if AI Vision read it: its 'room' was the default for "no room tag", facades included.
  */
-export const canRenovate = (p: MediaPhoto) => !!RENOVATION_STEPS[p.room] && (p.room_by != null || p.analysed === true);
+export const canRenovate = (p: MediaPhoto) => !!RENOVATION_STEPS[p.room] && p.room_by != null;
 
 /** Same photo, renovated by generative AI. Expensive (≈2 × 120 transformations) and slow the first time, so only on demand. */
 export function renovated(cloud: string, p: MediaPhoto, w = 1400): CloudinaryImage | null {
