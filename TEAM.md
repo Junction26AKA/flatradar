@@ -59,7 +59,7 @@ You choose the stack. It must build to static files in `web/dist`, which Adam's 
 - demo slides: problem → live demo → how it works → MAE
 
 ## Deploy (Render free tier)
-- `render.yaml` defines one free web service built from `main` (`npm ci`, `node server.mjs`, health check `/api/health`). Pushing to `main` redeploys it.
+- `render.yaml` defines one free web service built from `main` (`npm ci` plus the web build into `web/dist` once `web/package.json` exists, `node server.mjs`, health check `/api/health`). Pushing to `main` redeploys it.
 - **Secrets** are set in the Render dashboard: `CONTEXT_DEV_API_KEY`, `MONGODB_URI`, `PUBLIC_URL` (the `https://….onrender.com` URL), `ADMIN_TOKEN`, and optionally `SENDGRID_*` and `SCORER_URL`.
 - **MongoDB Atlas → Network Access** must allow `0.0.0.0/0`, because Render's free tier has no fixed outbound IP.
 - **Keeping it awake:** free instances sleep after 15 minutes without requests. Two things keep it up:

@@ -11,12 +11,16 @@ import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, pr
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
 import { enrichFromCard } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
+import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
 const PUBLIC_URL = process.env.PUBLIC_URL?.replace(/\/$/, '') || null;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null;
 const WEB_DIR = path.resolve('web/dist');
+// Client-side routes: these paths get web/dist/index.html so deep links and reloads work.
+const SPA_ROUTE = /^\/(?:app(?:\/.*)?|signin\/?)$/;
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const db = await getDb();
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
@@ -85,7 +89,7 @@ async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
 
-  if (req.method === 'OPTIONS') return send(res, 204, {}, { 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type,x-admin-token' });
+  if (req.method === 'OPTIONS') return send(res, 204, {}, { 'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'content-type,x-admin-token' });
   if (p === '/stream') return openStream(req, res);
 
   if (p === '/webhooks/context' && req.method === 'POST') {
@@ -133,10 +137,36 @@ async function route(req, res) {
 
   if (p === '/api/users' && req.method === 'POST') {
     const b = await readJson(req);
-    if (!b.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(b.email)) return send(res, 400, { error: 'valid email required' });
+    if (typeof b.email !== 'string' || !EMAIL_RE.test(b.email)) return send(res, 400, { error: 'valid email required' });
+    if (b.password != null) { const problem = passwordProblem(b.password); if (problem) return send(res, 400, { error: problem }); }
+    const email = b.email.toLowerCase();
+    // An account with a password can only be changed by its signed-in owner.
+    const existing = await db.collection('users').findOne({ email }, { projection: { password_hash: 1 } });
+    if (existing?.password_hash) {
+      const me = await currentUser(req);
+      if (!me || String(me._id) !== String(existing._id)) return send(res, 409, { error: 'account exists, sign in first' });
+    }
     const searches = Array.isArray(b.searches) ? b.searches.slice(0, 5) : [];
-    const r = await db.collection('users').findOneAndUpdate({ email: b.email.toLowerCase() }, { $set: { name: b.name ?? null, searches, updated_at: new Date() }, $setOnInsert: { created_at: new Date() } }, { upsert: true, returnDocument: 'after' });
-    return send(res, 200, { id: r._id });
+    const set = { name: b.name ?? null, searches, updated_at: new Date(), ...(b.password ? { password_hash: await hashPassword(b.password) } : {}) };
+    const r = await db.collection('users').findOneAndUpdate({ email }, { $set: set, $setOnInsert: { email, created_at: new Date() } }, { upsert: true, returnDocument: 'after' });
+    // Signing up with a password also signs you in.
+    return send(res, 200, { id: r._id }, b.password ? { 'Set-Cookie': await startSession(r._id) } : {});
+  }
+
+  // Sign-in (cookie session, same origin)
+  if (p === '/api/me' && req.method === 'GET') {
+    const me = await currentUser(req);
+    return me ? send(res, 200, { user: publicUser(me) }) : send(res, 401, { error: 'not signed in' });
+  }
+  if (p === '/api/session' && req.method === 'POST') {
+    const b = await readJson(req);
+    if (typeof b.email !== 'string' || typeof b.password !== 'string' || !b.password) return send(res, 400, { error: 'email and password required' });
+    const user = await db.collection('users').findOne({ email: b.email.toLowerCase() });
+    if (!(await verifyPassword(b.password, user?.password_hash))) return send(res, 401, { error: 'wrong email or password' });
+    return send(res, 200, { user: publicUser(user) }, { 'Set-Cookie': await startSession(user._id) });
+  }
+  if (p === '/api/session' && req.method === 'DELETE') {
+    return send(res, 200, { ok: true }, { 'Set-Cookie': await endSession(req) });
   }
 
   // Mock feed (public, scraped by Context.dev)
@@ -180,7 +210,10 @@ async function route(req, res) {
       const type = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json' }[path.extname(file)] ?? 'application/octet-stream';
       res.writeHead(200, { 'Content-Type': type }); return fs.createReadStream(file).pipe(res);
     }
-    if (!p.startsWith('/api/')) { res.writeHead(200, { 'Content-Type': 'text/html' }); return fs.createReadStream(path.join(WEB_DIR, 'index.html')).pipe(res); }
+    if (SPA_ROUTE.test(p)) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+      return fs.createReadStream(path.join(WEB_DIR, 'index.html')).pipe(res);
+    }
   }
   return send(res, 404, { error: 'not found' });
 }
