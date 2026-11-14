@@ -7,10 +7,11 @@ import path from 'node:path';
 import { context, call, telemetry } from './lib/context.mjs';
 import getDb, { client } from './lib/db.mjs';
 import { bus } from './lib/bus.mjs';
-import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, processSearchPage } from './lib/monitors.mjs';
+import { ensureMonitors, verifySignature, findSignatureHeader, handleWebhook, processSearchPage, sweepPrices } from './lib/monitors.mjs';
 import { publishMock, renderIndex, renderListing, renderPdf, mockCards, mockJson, PRESETS } from './lib/mock.mjs';
 import { enrichFromCard, resumeStuck, resumeInsights } from './lib/enrich.mjs';
 import { alertForListing } from './lib/alerts/index.mjs';
+import { loadStreetWorks, streetWorksStatus } from './lib/flags/streetworks.mjs';
 import { hashPassword, verifyPassword, passwordProblem, startSession, endSession, currentUser, publicUser } from './lib/auth.mjs';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -120,7 +121,7 @@ async function route(req, res) {
     const scorer = scorerUrl
       ? await fetch(`${scorerUrl}/health`, { signal: AbortSignal.timeout(2500) }).then((r) => r.json()).catch((e) => ({ ok: false, error: e.name }))
       : null;
-    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer });
+    return send(res, 200, { ok: true, public_url: PUBLIC_URL, monitors, last_webhook_at: last?.at ?? null, listings: Object.fromEntries(counts.map((c) => [c._id, c.n])), sse_clients: clients.size, scorer, street_works: streetWorksStatus() });
   }
 
   if (p === '/api/listings' && req.method === 'GET') {
@@ -208,6 +209,13 @@ async function route(req, res) {
     return send(res, 202, { started: target });
   }
 
+  if (p === '/admin/sweep' && req.method === 'POST') {
+    if (!isAdmin(req)) return send(res, 403, { error: 'forbidden' });
+    const b = await readJson(req);
+    sweepPrices(b.pages ? { pages: Number(b.pages) } : {}).catch((e) => log('price sweep failed', e.message));
+    return send(res, 202, { started: true });
+  }
+
   // Static web app
   if (req.method === 'GET' && fs.existsSync(WEB_DIR)) {
     const file = path.join(WEB_DIR, p === '/' ? 'index.html' : p);
@@ -233,8 +241,16 @@ server.listen(PORT, HOST, () => {
   const startedAt = new Date();
   const resumeEnrich = (before) => resumeStuck({ before }).then((n) => n && log(`resumed ${n} half-enriched listings`)).catch((e) => log('resume failed', e.message));
   const resumeGemini = (before) => resumeInsights({ before }).then((n) => n && log(`retried ${n} unfinished Gemini analyses`)).catch((e) => log('insight resume failed', e.message));
+  loadStreetWorks(); // warm the street-works register before the first enrichment needs it
+  setInterval(loadStreetWorks, 30 * 60 * 1000).unref();
   setTimeout(() => resumeEnrich(startedAt), 5_000);
   setTimeout(() => resumeGemini(startedAt), 10_000);
+  // Price sweep over search pages 2…N (page 1 is the monitors' job). Deployed instance only, as it spends credits.
+  const sweepMin = Number(process.env.PRICE_SWEEP_MINUTES ?? 60);
+  if (PUBLIC_URL && sweepMin > 0) {
+    setTimeout(() => sweepPrices().catch((e) => log('price sweep failed', e.message)), 2 * 60 * 1000);
+    setInterval(() => sweepPrices().catch((e) => log('price sweep failed', e.message)), sweepMin * 60 * 1000).unref();
+  }
   setInterval(() => {
     resumeEnrich(new Date(Date.now() - 5 * 60 * 1000));
     resumeGemini(new Date(Date.now() - 2 * 60 * 1000));

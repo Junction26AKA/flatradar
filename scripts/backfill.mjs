@@ -24,7 +24,8 @@ const log = (...a) => console.log(stamp(), ...a);
 const db = await getDb();
 
 async function collectCards() {
-  const portals = args.portal ? [args.portal] : Object.keys(PORTALS);
+  // Oikotie is skipped by default: the live diff de-duplicates it against Etuovi/Vuokraovi, the backfill doesn't.
+const portals = args.portal ? [args.portal] : Object.keys(PORTALS).filter((p) => !PORTALS[p].format);
   const pages = Number(args.pages);
   const jobs = portals.flatMap((p) => Array.from({ length: pages }, (_, i) => ({ portal: p, page: i + 1 })));
   const results = await Promise.allSettled(jobs.map(({ portal, page }) =>

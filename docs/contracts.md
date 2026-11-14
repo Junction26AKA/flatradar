@@ -10,7 +10,7 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
 ```jsonc
 {
   "_id": "etuovi:20828740",          // "<portal>:<portal id>"
-  "portal": "etuovi" | "vuokraovi" | "mock",
+  "portal": "etuovi" | "vuokraovi" | "oikotie" | "mock",
   "kind": "sale" | "rent",
   "url": "https://www.etuovi.com/kohde/20828740",
   "address": "Wavulinintie 5, Helsinki", "postcode": "00210", "district": "Lauttasaari",

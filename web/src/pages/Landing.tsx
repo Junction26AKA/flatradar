@@ -316,7 +316,7 @@ function FlyingFlags({ progress, data, narrow }: { progress: MotionValue<number>
         <FlyingChip progress={progress} i={flags.length} to={[-1, 16]}>
           <span className="lp__quote">
             <span className="t-body-s">“{quoted.source.quote}”</span>
-            <span className="t-num-s lp__quotesrc">{isExample ? t('lp.exampleListing') : `${listing.portal}.com · ${shortAddress(listing)}`}</span>
+            <span className="t-num-s lp__quotesrc">{isExample ? t('lp.exampleListing') : `${listing.portal === 'oikotie' ? 'oikotie.fi' : `${listing.portal}.com`} · ${shortAddress(listing)}`}</span>
           </span>
         </FlyingChip>
       )}

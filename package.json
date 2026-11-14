@@ -8,7 +8,9 @@
     "setup-db": "node --env-file-if-exists=.env scripts/setup-db.mjs",
     "backfill": "node --env-file-if-exists=.env scripts/backfill.mjs",
     "enrich-all": "node --env-file-if-exists=.env scripts/enrich-all.mjs",
-    "insight-all": "node --env-file-if-exists=.env scripts/insight-all.mjs"
+    "insight-all": "node --env-file-if-exists=.env scripts/insight-all.mjs",
+    "streetworks-all": "node --env-file-if-exists=.env scripts/streetworks-all.mjs",
+    "test:dedupe": "node --env-file-if-exists=.env scripts/test-dedupe.mjs"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
