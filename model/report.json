@@ -1,0 +1,445 @@
+{
+  "version": "gbr-v1",
+  "trained_at": "2026-11-14T03:56:52.465705+00:00",
+  "method": "5-fold out-of-fold; error = |fair - asking| / asking on €/m²",
+  "kinds": {
+    "sale": {
+      "kind": "sale",
+      "n": 310,
+      "target": "absolute",
+      "w_model": 1.0,
+      "calibration": 1.0737221426968255,
+      "estimators": [
+        {
+          "estimator": "baseline (Statistics Finland x calibration)",
+          "coverage": 0.981,
+          "mae_pct": 0.1956,
+          "median_ape": 0.1448,
+          "within_10pct": 0.372
+        },
+        {
+          "estimator": "comps (median of nearby listings)",
+          "coverage": 0.519,
+          "mae_pct": 0.1617,
+          "median_ape": 0.1181,
+          "within_10pct": 0.453
+        },
+        {
+          "estimator": "model (absolute target)",
+          "coverage": 1.0,
+          "mae_pct": 0.1321,
+          "median_ape": 0.0944,
+          "within_10pct": 0.532
+        },
+        {
+          "estimator": "blend (w_model=1.00)",
+          "coverage": 1.0,
+          "mae_pct": 0.1321,
+          "median_ape": 0.0944,
+          "within_10pct": 0.532
+        }
+      ],
+      "feature_importance": [
+        {
+          "feature": "log_sale_base",
+          "importance": 0.1665
+        },
+        {
+          "feature": "year",
+          "importance": 0.07683
+        },
+        {
+          "feature": "dist_center_km",
+          "importance": 0.0205
+        },
+        {
+          "feature": "m2",
+          "importance": 0.01952
+        },
+        {
+          "feature": "plot_leased",
+          "importance": 0.01247
+        },
+        {
+          "feature": "lat",
+          "importance": 0.01245
+        },
+        {
+          "feature": "condition",
+          "importance": 0.01145
+        },
+        {
+          "feature": "lng",
+          "importance": 0.01115
+        },
+        {
+          "feature": "fee_m2",
+          "importance": 0.00704
+        },
+        {
+          "feature": "floors_total",
+          "importance": 0.00119
+        },
+        {
+          "feature": "floor",
+          "importance": 0.00044
+        },
+        {
+          "feature": "sauna",
+          "importance": 0.00042
+        },
+        {
+          "feature": "elevator",
+          "importance": 0.00017
+        },
+        {
+          "feature": "balcony",
+          "importance": 0.0001
+        },
+        {
+          "feature": "terraced",
+          "importance": 7e-05
+        },
+        {
+          "feature": "rooms",
+          "importance": 0.0
+        },
+        {
+          "feature": "top_floor",
+          "importance": -5e-05
+        },
+        {
+          "feature": "log_rent_base",
+          "importance": -0.0007
+        }
+      ],
+      "hand_check": [
+        {
+          "id": "etuovi:619822",
+          "url": "https://www.etuovi.com/kohde/619822",
+          "address": "Häräntie 13 C",
+          "m2": 126.5,
+          "rooms": 5,
+          "year": 1984,
+          "asking_m2": 2332.02,
+          "fair_m2": 2684.91,
+          "deal_pct": -0.131
+        },
+        {
+          "id": "etuovi:20637654",
+          "url": "https://www.etuovi.com/kohde/20637654",
+          "address": "Korkeavuorenkatu 5, Helsinki",
+          "m2": 45,
+          "rooms": 2,
+          "year": 1928,
+          "asking_m2": 9733.33,
+          "fair_m2": 8436.92,
+          "deal_pct": 0.154
+        },
+        {
+          "id": "etuovi:80544844",
+          "url": "https://www.etuovi.com/kohde/80544844",
+          "address": "Hämeentie 62 A",
+          "m2": 39,
+          "rooms": 1,
+          "year": 1941,
+          "asking_m2": 5800.0,
+          "fair_m2": 5392.96,
+          "deal_pct": 0.075
+        },
+        {
+          "id": "etuovi:80543824",
+          "url": "https://www.etuovi.com/kohde/80543824",
+          "address": "Mikael Lybeckin katu 12 B, Helsinki",
+          "m2": 33.4,
+          "rooms": 2,
+          "year": 1942,
+          "asking_m2": 7275.45,
+          "fair_m2": 6848.14,
+          "deal_pct": 0.062
+        },
+        {
+          "id": "etuovi:40215551",
+          "url": "https://www.etuovi.com/kohde/40215551",
+          "address": "Klaavuntie 6, Helsinki",
+          "m2": 39,
+          "rooms": 2,
+          "year": 1961,
+          "asking_m2": 3743.59,
+          "fair_m2": 3820.01,
+          "deal_pct": -0.02
+        },
+        {
+          "id": "etuovi:10001608",
+          "url": "https://www.etuovi.com/kohde/10001608",
+          "address": "Steniuksentie 20 B27",
+          "m2": 70,
+          "rooms": 3,
+          "year": 2024,
+          "asking_m2": 6495.33,
+          "fair_m2": 6403.74,
+          "deal_pct": 0.014
+        },
+        {
+          "id": "etuovi:hp7837",
+          "url": "https://www.etuovi.com/kohde/hp7837",
+          "address": "Hiihtomäentie 24",
+          "m2": 85,
+          "rooms": 4,
+          "year": 1955,
+          "asking_m2": 4764.71,
+          "fair_m2": 3964.92,
+          "deal_pct": 0.202
+        },
+        {
+          "id": "etuovi:20532395",
+          "url": "https://www.etuovi.com/kohde/20532395",
+          "address": "Punavuorenkatu 23",
+          "m2": 44,
+          "rooms": 2,
+          "year": 1977,
+          "asking_m2": 6590.91,
+          "fair_m2": 7365.03,
+          "deal_pct": -0.105
+        },
+        {
+          "id": "etuovi:80547349",
+          "url": "https://www.etuovi.com/kohde/80547349",
+          "address": "Fastbölentie 3a",
+          "m2": 159,
+          "rooms": 6,
+          "year": 2015,
+          "asking_m2": 4144.65,
+          "fair_m2": 3731.08,
+          "deal_pct": 0.111
+        },
+        {
+          "id": "etuovi:21145934",
+          "url": "https://www.etuovi.com/kohde/21145934",
+          "address": "Vattuniemenkatu 28 A 25",
+          "m2": 67,
+          "rooms": 3,
+          "year": 2028,
+          "asking_m2": 8607.46,
+          "fair_m2": 8416.34,
+          "deal_pct": 0.023
+        }
+      ]
+    },
+    "rent": {
+      "kind": "rent",
+      "n": 311,
+      "target": "absolute",
+      "w_model": 0.7000000000000001,
+      "calibration": 1.0348583877995647,
+      "estimators": [
+        {
+          "estimator": "baseline (Statistics Finland x calibration)",
+          "coverage": 1.0,
+          "mae_pct": 0.1332,
+          "median_ape": 0.1051,
+          "within_10pct": 0.473
+        },
+        {
+          "estimator": "comps (median of nearby listings)",
+          "coverage": 0.646,
+          "mae_pct": 0.085,
+          "median_ape": 0.0693,
+          "within_10pct": 0.672
+        },
+        {
+          "estimator": "model (absolute target)",
+          "coverage": 1.0,
+          "mae_pct": 0.0855,
+          "median_ape": 0.062,
+          "within_10pct": 0.688
+        },
+        {
+          "estimator": "blend (w_model=0.70)",
+          "coverage": 1.0,
+          "mae_pct": 0.0836,
+          "median_ape": 0.0574,
+          "within_10pct": 0.704
+        }
+      ],
+      "feature_importance": [
+        {
+          "feature": "m2",
+          "importance": 0.07906
+        },
+        {
+          "feature": "log_sale_base",
+          "importance": 0.03542
+        },
+        {
+          "feature": "year",
+          "importance": 0.02796
+        },
+        {
+          "feature": "log_rent_base",
+          "importance": 0.01504
+        },
+        {
+          "feature": "dist_center_km",
+          "importance": 0.01142
+        },
+        {
+          "feature": "lng",
+          "importance": 0.00262
+        },
+        {
+          "feature": "balcony",
+          "importance": 0.0019
+        },
+        {
+          "feature": "rooms",
+          "importance": 0.00108
+        },
+        {
+          "feature": "floor",
+          "importance": 0.00079
+        },
+        {
+          "feature": "elevator",
+          "importance": 0.00074
+        },
+        {
+          "feature": "condition",
+          "importance": 0.0007
+        },
+        {
+          "feature": "floors_total",
+          "importance": 0.00067
+        },
+        {
+          "feature": "sauna",
+          "importance": 0.00058
+        },
+        {
+          "feature": "lat",
+          "importance": 0.00047
+        },
+        {
+          "feature": "top_floor",
+          "importance": 0.00031
+        },
+        {
+          "feature": "terraced",
+          "importance": 0.0
+        }
+      ],
+      "hand_check": [
+        {
+          "id": "vuokraovi:hq3372",
+          "url": "https://www.vuokraovi.com/kohde/hq3372",
+          "address": "Albertinkatu 33 B",
+          "m2": 80,
+          "rooms": 3,
+          "year": 1888,
+          "asking_m2": 22.38,
+          "fair_m2": 27.28,
+          "deal_pct": -0.18
+        },
+        {
+          "id": "vuokraovi:hq7269",
+          "url": "https://www.vuokraovi.com/kohde/hq7269",
+          "address": "Paukkulantie 2 B",
+          "m2": 56,
+          "rooms": 3,
+          "year": 2020,
+          "asking_m2": 18.66,
+          "fair_m2": 18.49,
+          "deal_pct": 0.009
+        },
+        {
+          "id": "vuokraovi:hq3799",
+          "url": "https://www.vuokraovi.com/kohde/hq3799",
+          "address": "Korkeavuorenkatu 8",
+          "m2": 73,
+          "rooms": 2,
+          "year": 1908,
+          "asking_m2": 30.14,
+          "fair_m2": 26.72,
+          "deal_pct": 0.128
+        },
+        {
+          "id": "vuokraovi:hq6687",
+          "url": "https://www.vuokraovi.com/kohde/hq6687",
+          "address": "Kaivonkatsojantie 8 C 57",
+          "m2": 99.5,
+          "rooms": 5,
+          "year": 1998,
+          "asking_m2": 15.43,
+          "fair_m2": 16.02,
+          "deal_pct": -0.037
+        },
+        {
+          "id": "vuokraovi:hp8878",
+          "url": "https://www.vuokraovi.com/kohde/hp8878",
+          "address": "Vanhaistentie 1b B 46",
+          "m2": 46.5,
+          "rooms": 2,
+          "year": 2022,
+          "asking_m2": 15.91,
+          "fair_m2": 21.51,
+          "deal_pct": -0.26
+        },
+        {
+          "id": "vuokraovi:hq4938",
+          "url": "https://www.vuokraovi.com/kohde/hq4938",
+          "address": "Isosaarentie 8 A",
+          "m2": 27.5,
+          "rooms": 1,
+          "year": 2026,
+          "asking_m2": 28.69,
+          "fair_m2": 29.5,
+          "deal_pct": -0.027
+        },
+        {
+          "id": "vuokraovi:hp9489",
+          "url": "https://www.vuokraovi.com/kohde/hp9489",
+          "address": "Rikhard Nymanin tie 3 A",
+          "m2": 40,
+          "rooms": 2,
+          "year": 1964,
+          "asking_m2": 20.73,
+          "fair_m2": 19.53,
+          "deal_pct": 0.061
+        },
+        {
+          "id": "vuokraovi:hq2283",
+          "url": "https://www.vuokraovi.com/kohde/hq2283",
+          "address": "Kalteentie 3",
+          "m2": 61,
+          "rooms": 2,
+          "year": 1972,
+          "asking_m2": 14.74,
+          "fair_m2": 15.05,
+          "deal_pct": -0.021
+        },
+        {
+          "id": "vuokraovi:hp9328",
+          "url": "https://www.vuokraovi.com/kohde/hp9328",
+          "address": "Viulupolku 5, Helsinki",
+          "m2": 74.5,
+          "rooms": 3,
+          "year": 1979,
+          "asking_m2": 16.09,
+          "fair_m2": 16.19,
+          "deal_pct": -0.006
+        },
+        {
+          "id": "vuokraovi:hq4668",
+          "url": "https://www.vuokraovi.com/kohde/hq4668",
+          "address": "Viikinportti 2",
+          "m2": 71.5,
+          "rooms": 3,
+          "year": 2011,
+          "asking_m2": 19.4,
+          "fair_m2": 19.29,
+          "deal_pct": 0.006
+        }
+      ]
+    }
+  }
+}
