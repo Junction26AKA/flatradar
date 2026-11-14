@@ -6,10 +6,11 @@ import { flagLabel } from '../lib/flagText';
 import { dealLabel, eur, factsLine } from '../lib/format';
 import { useI18n } from '../lib/i18n';
 import { useFeed } from '../lib/store';
-import type { ListingDetail as Detail } from '../lib/types';
+import type { ListingDetail as Detail, Portal } from '../lib/types';
 
-/** Display names for the "View on …" link; mock listings have no real ad, so they get no link. */
-const PORTAL_NAMES: Record<string, string | undefined> = { etuovi: 'Etuovi', vuokraovi: 'Vuokraovi', oikotie: 'Oikotie' };
+/** Display names for the "View on …" link. Typed over every Portal so a new portal can't silently lose its link;
+ *  mock listings have no real ad, so they get none. */
+const PORTAL_NAMES: Record<Portal, string | null> = { etuovi: 'Etuovi', vuokraovi: 'Vuokraovi', oikotie: 'Oikotie', mock: null };
 
 /** Step-1 scaffold for /app/l/:id. Step 5 turns this into the drawer (score breakdown, comps, flags, map, fan-out). */
 export default function ListingDetail() {
