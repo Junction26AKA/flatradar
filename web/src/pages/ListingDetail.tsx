@@ -12,7 +12,7 @@ import type { ListingDetail as Detail } from '../lib/types';
 export default function ListingDetail() {
   const { id = '' } = useParams();
   const { byId, calls } = useFeed();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [detail, setDetail] = useState<Detail | null | undefined>(undefined);
 
   useEffect(() => {
@@ -36,9 +36,9 @@ export default function ListingDetail() {
         {t('card.fair')} {eur(l.score?.fair_price)} {l.score && `· ${dealLabel(l.score.deal_pct)} · ${t(`confidence.${l.score.confidence}`)}`}
       </p>
       <p className="t-body-s">{l.flags.map((f) => flagLabel(f) + (f.status === 'error' ? ` (${t('flag.failed')})` : f.status === 'pending' ? ` ${t('flag.checking')}` : '')).join(' · ') || t('detail.noFlags')}</p>
-      <p className="t-num-s muted">{t('detail.calls', { n: callRows.length })}</p>
+      <p className="t-num-s muted">{t('detail.calls', { n: callRows.filter((c) => !c.endpoint.startsWith('gemini')).length })}</p>
     </div>
-    <AnalystPanel listing={l} />
+    <AnalystPanel listing={l} lang={lang} />
     </>
   );
 }

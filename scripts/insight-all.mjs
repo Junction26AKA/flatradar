@@ -34,7 +34,7 @@ console.log(`analysing ${docs.length} listings with Gemini…`);
 const limit = pLimit(4);
 let ok = 0, newFlags = 0, dropped = 0;
 await Promise.all(docs.map((d) => limit(async () => {
-  const r = await analyseAndPatch(d);
+  const r = await analyseAndPatch(d._id); // re-reads the listing, and skips it unless it's ready
   if (!r) return;
   ok++;
   newFlags += r.flags.length;

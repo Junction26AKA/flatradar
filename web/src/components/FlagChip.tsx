@@ -5,13 +5,13 @@ import './badges.css';
 
 /** Figma "FlagChip". Pending = the Context.dev call is still running: dashed outline + spinner. */
 export function FlagChip({ flag }: { flag: Flag }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const state = flag.status === 'pending' ? 'pending' : flag.status === 'error' ? 'error' : flag.severity;
   const cost = flagCost(flag);
   return (
     <span
       className={`chip chip--${state}`}
-      title={flag.status === 'error' ? t('flag.failed') : flag.detail ?? flag.source?.quote ?? undefined}
+      title={flag.status === 'error' ? t('flag.failed') : (lang === 'fi' && flag.detail_fi) || flag.detail || flag.source?.quote || undefined}
     >
       <i aria-hidden="true" className={flag.status === 'pending' ? 'chip__spin' : 'chip__dot'} />
       {flagLabel(flag)}

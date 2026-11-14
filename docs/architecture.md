@@ -49,7 +49,7 @@ flowchart LR
 
 - **One Node process** does ingestion, enrichment, the API, the SSE stream and alerts. It needs to stay running because of SSE and the in-process event bus. On Render's free tier it is kept awake by a GitHub Actions ping to `/api/health` every 5 minutes (`.github/workflows/keepalive.yml`).
 - **The scorer** is a separate Python service. Node waits up to 3 s for it, then falls back to its own score from comparable listings (`lib/score/index.mjs`).
-- **Gemini** is optional. Without `GEMINI_API_KEY` the pipeline runs exactly as before, just without the analyst step.
+- **Gemini** is optional. Without `GEMINI_API_KEY` the analyst step is skipped and alerts, scores and flags work as before.
 
 ## 2. From a new listing to an alert
 
@@ -92,7 +92,7 @@ sequenceDiagram
   N-->>UI: listing.updated (analyst panel fills in)
 ```
 
-Gemini runs after the listing is marked ready and isn't awaited, so it never delays the alert email or the measured latency (`enrich_ms`). In tests on real listings it took 3–5 s.
+Gemini runs after the listing is marked ready and isn't awaited, so it never delays the alert email or the measured latency (`enrich_ms`). In tests on real listings it took 3–8 s (it writes English and Finnish).
 
 **Demo path:** `POST /mock/publish` adds a flat to our own `/mock` page and calls `run-monitor-now`. Context.dev then sees the change and calls our webhook like any real portal. If no webhook arrives within 40 s, the server diffs `/mock` itself.
 
@@ -121,9 +121,10 @@ flowchart TD
 - **What Gemini does and doesn't decide:**
   - It writes the words: verdict, explanations, questions.
   - It proposes extra hidden costs. Each one is kept only if its quote (at least 12 characters) appears word for word in the *planned* renovations text of the listing or a PDF. Completed work is shown to the model as context it can't cite.
-  - It never sets a number. The kind of work is classified with the same regexes as the rule flags (`lib/flags/renovations.mjs`), which gives the € per m² and the chip label. Unrecognised work gets no cost.
+  - It never sets a number. The kind of work is classified with the same regexes as the rule flags (`lib/flags/renovations.mjs`, plus facade seams and yard/drainage in `lib/insight.mjs`), which gives the € per m² and the chip label. Unrecognised work gets no cost. The year comes from the quoted text.
   - Totals are summed in code, counting each kind of work once.
-  - Every run has a token. Only the newest run's result is written, and the write swaps Gemini's flags atomically, so it never overwrites other flags.
+  - Each run re-reads the listing when it starts and has a token. A run that has been superseded (a newer run, or a re-enrichment) writes nothing. The write swaps Gemini's flags atomically, so it never overwrites other flags.
+  - Runs cut off by a restart or deploy are retried at startup and every 3 minutes.
 
 ## 4. How fair value is computed (`model/`)
 

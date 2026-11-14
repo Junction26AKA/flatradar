@@ -80,7 +80,11 @@ The request body is a `listing` (with or without `score` and `flags`). The respo
 ```
 
 ## 3b. `Insight` (Gemini analyst, `lib/insight.mjs`)
-Runs after the card is `ready`, so it never delays alerts. While it runs, `insight` is `{ "status": "pending", "run": "…", "at": "…" }`; if it fails, `{ "status": "error", "error": "…" }`. A re-enrichment sets it back to `null`. Each run's `run` token means only the newest run's result is written.
+Runs after the card is `ready`, so it never delays alerts. While it runs, `insight` is `{ "status": "pending", "run": "…", "at": "…" }`; if it fails, `{ "status": "error", "error": "…", "run": "…", "at": "…" }`. A re-enrichment sets it back to `null`.
+- A run re-reads the listing when it starts and only runs on a `ready` listing.
+- `run` is a per-run token. A result is written only if its token is still in `insight` and the listing is still `ready`, so a run that was superseded (a newer run, or a re-enrichment) writes nothing.
+- The server retries runs left `pending` by a restart: once at startup, then every 3 minutes.
+- `doc_extracts` (the PDF text from the last enrichment) is stored on the listing for these runs, but not returned by the API.
 ```jsonc
 {
   "status": "ok",
@@ -94,7 +98,11 @@ Runs after the card is `ready`, so it never delays alerts. While it runs, `insig
   "sources": 3, "model": "gemini-3.8-flash", "tokens": 1260, "ms": 4100, "at": "ISO date"
 }
 ```
-The model never produces a number. A hidden cost is kept only if its quote (≥ 12 characters) appears in a *planned*-renovations source (completed work is given to the model as context it can't cite). The kind of work, and so its € per m², comes from the regexes in `lib/flags/renovations.mjs` applied to that quote; no match means no cost. Totals are summed in code, with each kind of work counted once.
+The model never produces a number:
+- A hidden cost is kept only if its quote (≥ 12 characters, within one renovation line) appears in a *planned*-renovations source. Completed work is given to the model as context it can't cite.
+- The kind of work, and so its € per m² and chip label, comes from the regexes in `lib/flags/renovations.mjs` plus two extra kinds in `lib/insight.mjs` (facade seams, yard/drainage, €60/m²), applied to that quote. No match means no cost.
+- The year comes from the quote, or else its source line.
+- Totals are summed in code, with each priced kind of work counted once.
 
 ## 4. HTTP API (Adam, Node, same origin as the web app)
 | Method + path | Returns |
