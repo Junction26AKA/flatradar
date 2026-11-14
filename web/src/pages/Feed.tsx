@@ -29,8 +29,8 @@ export default function Feed() {
   const now = useNow();
   const [params] = useSearchParams();
   // ?match=1 (from My searches → "See matches") starts with the "Matches my search" filter on.
-  // ?saved=1 starts with the "Saved" filter on.
-  const [filters, setFilters] = useState<Set<Filter>>(() => new Set([...(params.get('match') ? ['match' as const] : []), ...(params.get('saved') ? ['saved' as const] : [])]));
+  // ?saved=1 starts with the "Saved" filter on. Filters are exclusive, so ?match wins if both are set.
+  const [filters, setFilters] = useState<Set<Filter>>(() => new Set(params.get('match') ? ['match'] : params.get('saved') ? ['saved'] : []));
   const [limit, setLimit] = useState(PAGE);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false); // mobile only
@@ -51,7 +51,8 @@ export default function Feed() {
       ),
     [all, filters, searches, favSet],
   );
-  const toggle = (f: Filter) => setFilters((s) => { const n = new Set(s); if (n.has(f)) n.delete(f); else n.add(f); return n; });
+  // Filters are mutually exclusive: picking one clears the others; picking the active one clears it.
+  const toggle = (f: Filter) => setFilters((s) => new Set(s.has(f) ? [] : [f]));
   const link = (id: string) => `/app/l/${encodeURIComponent(id)}?kind=${kind}`;
   const open = (id: string) => nav(link(id));
   const toast = useNewDealToast(all, fresh);
