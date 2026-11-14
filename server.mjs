@@ -63,7 +63,7 @@ function cleanSearch(s) {
     .map((points) => ({ points }));
   const c = s?.commute;
   const commute = c && isLatLng(c.lat, c.lng) && Number.isFinite(Number(c.max_min))
-    ? { label: label(c.label) ?? 'Destination', lat: c.lat, lng: c.lng, max_min: Math.min(120, Math.max(5, Math.round(Number(c.max_min)))) }
+    ? { label: label(c.label) ?? `${(+c.lat).toFixed(4)}, ${(+c.lng).toFixed(4)}`, lat: c.lat, lng: c.lng, max_min: Math.min(120, Math.max(5, Math.round(Number(c.max_min)))) }
     : null;
   return {
     kind: s?.kind === 'rent' ? 'rent' : 'sale',
