@@ -29,6 +29,10 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MAX_FAVOURITES = 200;
 const db = await getDb();
 const log = (...a) => console.log(new Date().toISOString(), ...a);
+// The index GET /api/listings pages on (same as scripts/setup-db.mjs). A no-op once it exists; deploys don't run
+// setup-db, so make sure of it here. Not awaited: a slow first build mustn't hold up startup.
+db.collection('listings').createIndex({ kind: 1, first_seen_at: -1, _id: -1 }, { name: 'kind_first_seen_id' })
+  .catch((e) => log('listings index kind_first_seen_id:', e.message));
 
 // ---------- helpers ----------
 function send(res, status, body, headers = {}) {
