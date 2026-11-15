@@ -80,9 +80,9 @@ All other services are optional, and each feature switches off cleanly without i
 | `data/fixtures/` | Sample listings and SSE events used for front-end development |
 
 ## Team
-- **Adam:** backend and infrastructure (ingestion, Context.dev, enrichment, API, alerts, deploy)
-- **Kevin:** fair-value model and scorer
-- **Amanda:** front end and design
+- **Adam Marshall** ([@amars2005](https://github.com/amars2005)): backend and infrastructure (ingestion, Context.dev, enrichment, API, alerts, deploy)
+- **Kevin Hapuhettige Don** ([@kevindon11](https://github.com/kevindon11)): fair-value model and scorer
+- **Amanda Hapuhettige Don** ([@ah3324](https://github.com/ah3324), [@amandahdon](https://github.com/amandahdon)): front end and design
 
 ## Notes
 - "Fair" is relative to current asking prices plus Statistics Finland's realised postcode prices. We don't have transaction prices for individual flats.
