@@ -1,8 +1,6 @@
 # Contracts
 
-These are the shapes the three parts agree on. If you need to change one, say so in chat first.
-
-Owners: the listing document, the API and SSE belong to Adam. `/score` and the `score` object belong to Kevin. Amanda only reads, so none are hers.
+These are the shapes shared by the three parts of FlatRadar: the Node service (`server.mjs`, `lib/`), the Python scorer (`model/`) and the web app (`web/`). The Node service owns the listing document, the HTTP API and the SSE events. The scorer owns `/score` and the `score` object. The web app only reads them.
 
 Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, for layout only.
 
@@ -38,15 +36,15 @@ Sample data is in `data/fixtures/`. Any numbers in a `score` there are made up, 
                                     // targets; { "min": null, "src": "none" } = no route, re-checked after a day
                                     // commute targets, key = commuteKey(lat, lng) in lib/geo.mjs. Only with DIGITRANSIT_KEY
   "price_history": [{ "at": "ISO date", "price": 329000, "debt_free_price": 329000, "rent": null }],
-  "score": Score | null,              // §2, filled in by Kevin's /score
-  "flags": [Flag],                    // §3, filled in by Adam's enrichment; grows as calls return
+  "score": Score | null,              // §2, filled in by the scorer's /score
+  "flags": [Flag],                    // §3, filled in by the enrichment (lib/enrich.mjs); grows as calls return
   "insight": Insight | null,          // §3b, Gemini analyst; arrives a few seconds after status "ready"
   "status": "new" | "enriching" | "ready"
 }
 ```
 The price per m² that everything compares on is `debt_free_price / m2` for a sale and `rent / m2` (per month) for a rental.
 
-### 1b. `media` (Cloudinary, lib/media, Amanda)
+### 1b. `media` (Cloudinary, lib/media)
 Runs after the listing is `ready`, never awaited (like the Gemini analyst). Only when `CLOUDINARY_URL` is set.
 ```jsonc
 {
@@ -63,7 +61,7 @@ Runs after the listing is `ready`, never awaited (like the Gemini analyst). Only
 AI Vision tags become flags with `type: "photo_condition"`, `origin: "photos"`, `photo: <index into media.photos>`
 and `source.kind: "photo"` (see §3). They're swapped atomically on each photo pass, leaving other flags alone.
 
-## 2. `/score` (Kevin, Python, `POST http://localhost:8000/score`)
+## 2. `/score` (Python, `POST http://localhost:8000/score`)
 The request body is a `listing` (with or without `score` and `flags`). The response is a `Score`:
 ```jsonc
 {
@@ -127,7 +125,7 @@ The model never produces a number:
 - The year comes from the quote, or else its source line.
 - Totals are summed in code, with each priced kind of work counted once.
 
-## 4. HTTP API (Adam, Node, same origin as the web app)
+## 4. HTTP API (Node, same origin as the web app)
 | Method + path | Returns |
 |---|---|
 | `GET /api/listings?kind=sale\|rent&limit=50` | `{ items: [listing] }`, newest `first_seen_at` first |

@@ -24,6 +24,6 @@ The keepalive pings Node's `/api/health`, which pings the scorer, so both stay a
 6. **Confidence.** `high` when the model and ≥5 comps agree within 10% and the gap is ≤25%. `medium` when they agree within 20%. Otherwise `low`, and always `low` for Hitas, right-of-occupancy and part-ownership.
 7. **Yield (sale).** The rent model's €/m² for the same flat × m² × 12 / debt-free price.
 
-**Honest caveat for the pitch:** "fair" is relative to current *asking* prices plus Statistics Finland's *realised* postcode prices. We don't have transaction prices for individual flats.
+**Caveat:** "fair" is relative to current *asking* prices plus Statistics Finland's *realised* postcode prices. We don't have transaction prices for individual flats.
 
 `train.py` prints and saves (`report.json`) the out-of-fold MAE for baseline vs comps vs model vs blend, the permutation feature importance, and 10 random listings for the hand check.

@@ -1,7 +1,8 @@
 # Plan: FlatRadar Helsinki (buy + rent) — fresh build, ~30 h
 
+> **This is the plan we wrote at the start of the hackathon (Sat 14 Nov 2026), kept as a record.** Some things changed while we built it. For example, street works come from the City of Helsinki permit register rather than news search, and Oikotie was added later. The current design is in [docs/architecture.md](docs/architecture.md).
+
 ## Context
-We're dropping the Helsinki Live Price Index entirely and starting a new project in a new folder.
 **Product:** watch Helsinki flats for sale and for rent on the live web. When a listing appears or its price drops,
 score it in seconds:
 - **Deal score:** asking price vs our estimate of fair price/rent, with comparable listings shown.
@@ -15,17 +16,16 @@ The demo moment: we publish a flat on a mock listing page and trigger the Contex
 Decisions made: both buy and rent, Helsinki, a fresh repo. Judging is 5 × 20%: impact, creative use of live web data, demo completeness, technical execution (latency and accuracy), real-timeness.
 
 ## Step 0: first hour (blocking)
-1. **Stop the old worker** (`pkill -f scripts/worker.mjs` on Adam's laptop). It spends ~140 Context.dev credits every 2 h, and the credit pool is shared.
-2. **Feasibility, ~30 credits.** Scrape with Context.dev and structured extraction:
+1. **Feasibility, ~30 credits.** Scrape with Context.dev and structured extraction:
    - Oikotie sale search (Helsinki, newest first), Oikotie rent search, Etuovi and Vuokraovi search pages
    - one listing page from each portal
    Confirm we get price, debt-free price (velaton hinta), m², rooms, build year, floor, address and postcode, maintenance fee (hoitovastike), plot (own or leased), "done / upcoming renovations" text, attachment PDF links, and coordinates if present.
    Pick the **two portals that work** (one for sale, one for rent). If both block us, use the mock feed plus whatever we can backfill.
-3. **Accounts:** a SendGrid trial with a verified single sender, and a Digitransit API key (geocoding plus the HSL commute stretch goal). Check what remains on the Context.dev monitor quota (`get-monitor-limits`).
-4. **Statistics Finland PxWeb:** find the tables for *prices of old dwellings by postal code* and *rents by postal code* (free JSON API, no Context.dev).
+2. **Accounts:** a SendGrid trial with a verified single sender, and a Digitransit API key (geocoding plus the HSL commute stretch goal). Check what remains on the Context.dev monitor quota (`get-monitor-limits`).
+3. **Statistics Finland PxWeb:** find the tables for *prices of old dwellings by postal code* and *rents by postal code* (free JSON API, no Context.dev).
 
 ### Step 0 results (Sat 14 Nov, 02:20)
-- **Credits:** 50,484 left. **Monitors:** 0 of 10 used (free plan). The old worker was not running.
+- **Credits:** 50,484 left. **Monitors:** 0 of 10 used (free plan).
 - **Sale portal = Etuovi.** The search page `https://www.etuovi.com/myytavat-asunnot/helsinki?jarjestys=uusimmat` scrapes cleanly as markdown. Each card has address, district, building type, year, rooms, floor, price, m² and a "Uusi 24 h" (new) tag. Listing URLs look like `https://www.etuovi.com/kohde/<id>`.
 - **One JSON extraction of a listing** (`kohde/20828740`) returned every field: postcode, coordinates, price and debt-free price, maintenance fee, plot, energy class, housing company, agent, and full done/planned renovation text (e.g. "2027 Parvekkeet ja julkisivu, works start 11/12 2026"). `attachments` came back empty, so the renovation text is the main hidden-cost source and PDFs are a bonus.
 - **Rent portal = Vuokraovi.** Same Alma Media platform as Etuovi. `https://www.vuokraovi.com/vuokra-asunnot/helsinki?jarjestys=uusimmat` works, but it redirects and adds a `&haku=` session parameter, so check that a monitor on it stays stable. Cards have type, rooms, address, rent €/month, m², year and availability.
@@ -43,9 +43,9 @@ Context.dev monitors (≤10) on portal search pages + our /mock page ──webho
 Python scorer (FastAPI /score) ← model trained on backfilled listings + Statistics Finland baselines
 MongoDB Atlas: users, listings (2dsphere, price history), events, documents, baselines
 ```
-- New folder `/Users/adam/Documents/junction26/flatradar/`, using the same tiny-wrapper conventions as before: one Context.dev client in `lib/context.mjs`, one Mongo client in `lib/db.mjs`, `.env` with `CONTEXT_DEV_API_KEY`, `MONGODB_URI`, `MONGODB_DB=flatradar`, `SENDGRID_API_KEY`, `DIGITRANSIT_KEY`. We can reuse the existing Atlas cluster with a new database.
+- Small wrappers: one Context.dev client in `lib/context.mjs`, one Mongo client in `lib/db.mjs`, `.env` with `CONTEXT_DEV_API_KEY`, `MONGODB_URI`, `MONGODB_DB=flatradar`, `SENDGRID_API_KEY`, `DIGITRANSIT_KEY`.
 - Node for ingestion, API and SSE, plus a small Python sidecar only for the model. If the model isn't ready in time, we ship the comparables score alone (see below).
-- Public URL for webhooks: cloudflared while developing, then deploy (Render, Railway or the Hostinger VPS). The service must be long-running because change streams and SSE need a persistent connection.
+- Public URL for webhooks: cloudflared while developing, then deploy (Render or Railway). The service must be long-running because change streams and SSE need a persistent connection.
 
 ## Components
 **1. Ingestion (`lib/ingest/`)**
@@ -107,7 +107,7 @@ MongoDB Atlas: users, listings (2dsphere, price history), events, documents, bas
 
 | Hours | Adam (backend/infra) | Kevin (model) | Amanda (front end/design) |
 |---|---|---|---|
-| 0–2 | stop old worker, Step 0 feasibility, repo scaffold, `.env`, SendGrid sender | Statistics Finland PxWeb pulls (sale and rent by postcode) → `baselines` | design system, card and detail wireframes, against a mock `listing` JSON |
+| 0–2 | Step 0 feasibility, repo scaffold, `.env`, SendGrid sender | Statistics Finland PxWeb pulls (sale and rent by postcode) → `baselines` | design system, card and detail wireframes, against a mock `listing` JSON |
 | 2–10 | extraction schemas + normalise, backfill via batch, geocode → `listings`; publish the `listing` schema to Kevin and Amanda | features from `listings`, train v1 (sale + rent), hold-out MAE | dashboard skeleton on fixture data, SSE client |
 | 10–18 | monitors + webhook + diffing, parse-document + flag extraction, news flags, users + matcher + email send | `/score` FastAPI, comparables `$geoNear` blend → deal score + confidence, yield | wire to the real API, detail view (score breakdown, comparables, flags with sources), sign-up form, email template |
 | 18–24 | deploy (public URL), `/mock` + `POST /mock/publish` → `run-monitor-now`, end-to-end test | model v2, spot-check 10 listings, MAE + feature-importance slide | map (Leaflet), polish, live "new listing" animation, mock flat page design |
@@ -126,5 +126,3 @@ MongoDB Atlas: users, listings (2dsphere, price history), events, documents, bas
   - `POST /mock/publish` → webhook received (check `list-webhook-deliveries`) → listing stored and scored → SSE card in < 30 s → email received
 - A real portal monitor fires at least once overnight, and we keep the event as proof.
 - Check `get-usage` before and after the backfill to confirm the credit budget.
-
-After approval, copy this plan into the new repo as `flatradar/PLAN.md`.
