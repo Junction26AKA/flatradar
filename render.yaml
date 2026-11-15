@@ -1,6 +1,6 @@
 # Render Blueprint (free web service). Secrets are entered in the Render dashboard (sync: false).
-# Free instances sleep after 15 min without inbound requests: keep it awake with an external pinger
-# hitting /api/health every 5 min (see TEAM.md → Deploy).
+# Free instances sleep after 15 min without inbound requests: .github/workflows/keepalive.yml hits /api/health
+# every 5 min (see docs/development.md → Deploy).
 services:
   - type: web
     name: flatradar
@@ -39,7 +39,7 @@ services:
       - key: DIGITRANSIT_KEY
         sync: false
 
-  # Kevin's fair-value model (model/serve.py). Node calls it via SCORER_URL and falls back to its own
+  # The fair-value model (model/serve.py). Node calls it via SCORER_URL and falls back to its own
   # comparables score if it's slow (>3 s) or down. Kept awake by the Node /api/health route, which pings it.
   - type: web
     name: flatradar-scorer

@@ -43,4 +43,3 @@ Without `CLOUDINARY_URL` everything here switches off and the app behaves as bef
 
 ## Notes
 - Real listing photos belong to the agents. We store copies only to run the analysis for this demo.
-- Submission: the challenge also asks for the survey at https://cld.media/hackathon-survey.
