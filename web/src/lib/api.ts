@@ -37,21 +37,24 @@ export async function getListings(kind?: Kind, limit = 50, signal?: AbortSignal,
   }
 }
 
-const PAGE = 500; // the server's per-request cap
+export const LISTINGS_PAGE = 500; // the server's per-request cap
 const MAX_PAGES = 20; // safety stop: 10,000 listings per kind
 
-/** Every listing of a kind, newest first: pages of 500 until a short page. A failed later page keeps what loaded. */
-export async function getAllListings(kind?: Kind, signal?: AbortSignal): Promise<Result<Listing[]>> {
-  const first = await getListings(kind, PAGE, signal);
-  if (first.source !== 'live') return first;
-  const all = [...first.data];
-  for (let page = 1, last = first.data.length; last === PAGE && page < MAX_PAGES; page++) {
-    const r = await getListings(kind, PAGE, signal, page * PAGE);
-    if (r.source !== 'live') break;
-    all.push(...r.data);
-    last = r.data.length;
+/**
+ * The listings after the first page of a kind, one page at a time, handed to `onPage` as each arrives.
+ * Stops at a short page, at MAX_PAGES, or when a page fails (what already arrived stays). Abort ends it quietly.
+ */
+export async function loadMoreListings(kind: Kind, onPage: (items: Listing[]) => void, signal?: AbortSignal): Promise<void> {
+  try {
+    for (let page = 1; page < MAX_PAGES; page++) {
+      const r = await getListings(kind, LISTINGS_PAGE, signal, page * LISTINGS_PAGE);
+      if (r.source !== 'live') return;
+      if (r.data.length) onPage(r.data);
+      if (r.data.length < LISTINGS_PAGE) return;
+    }
+  } catch (e) {
+    if (!isAbort(e)) throw e;
   }
-  return { data: all, source: 'live' };
 }
 
 export async function getListing(id: string, signal?: AbortSignal): Promise<Result<ListingDetail | null>> {

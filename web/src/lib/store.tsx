@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
-import { getAllListings, getListing, type Source } from './api';
+import { getListing, getListings, loadMoreListings, LISTINGS_PAGE, type Source } from './api';
 import { useStream } from './stream';
 import type { CallEnd, CallStart, Kind, Listing, StreamEvent } from './types';
 
@@ -50,10 +50,14 @@ function reducer(s: FeedState, a: Action): FeedState {
     return { ...s, byId, priceChanges, order: Object.keys(byId).sort(byNewest(byId)), source: a.source, loading: false };
   }
   if (a.type === 'merge') {
-    // Single listings fetched on demand (e.g. a saved flat older than the newest-150 window).
+    // Older pages of the feed, and single listings fetched on demand (e.g. a saved flat not loaded yet).
     const byId = { ...s.byId };
-    for (const l of a.items) byId[l._id] = { ...l, ...byId[l._id] };
-    return { ...s, byId, order: Object.keys(byId).sort(byNewest(byId)) };
+    const priceChanges = { ...s.priceChanges };
+    for (const l of a.items) {
+      byId[l._id] = { ...l, ...byId[l._id] };
+      if (l.last_price_drop && !priceChanges[l._id]) priceChanges[l._id] = l.last_price_drop;
+    }
+    return { ...s, byId, priceChanges, order: Object.keys(byId).sort(byNewest(byId)) };
   }
   const e = a.event;
   switch (e.type) {
@@ -103,13 +107,20 @@ export function FeedProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial);
   useEffect(() => {
     // Fetch each kind separately: rentals far outnumber sales, so one mixed "newest 100" would hide the sales.
+    // Show the newest page of each kind straight away, then merge in the older pages as they arrive.
     const ac = new AbortController();
-    Promise.all((['sale', 'rent'] as const).map((k) => getAllListings(k, ac.signal)))
+    const kinds = ['sale', 'rent'] as const;
+    Promise.all(kinds.map((k) => getListings(k, LISTINGS_PAGE, ac.signal)))
       .then((rs) => {
         // If either kind came from the server, show only server data: never mix fixtures into a live feed.
         const live = rs.filter((r) => r.source === 'live');
         const use = live.length ? live : rs;
         dispatch({ type: 'loaded', items: use.flatMap((r) => r.data), source: live.length ? 'live' : 'fixtures' });
+        rs.forEach((r, i) => {
+          if (r.source === 'live' && r.data.length === LISTINGS_PAGE) {
+            loadMoreListings(kinds[i], (items) => dispatch({ type: 'merge', items }), ac.signal).catch(() => {});
+          }
+        });
       })
       .catch(() => {});
     return () => ac.abort();

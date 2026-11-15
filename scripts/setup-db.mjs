@@ -10,6 +10,8 @@ for (const name of ['listings', 'events', 'calls', 'users', 'baselines', 'seen_c
 await db.collection('listings').createIndexes([
   { key: { loc: '2dsphere' }, name: 'loc_2dsphere' },
   { key: { kind: 1, first_seen_at: -1 }, name: 'kind_first_seen' },
+  // GET /api/listings pages by kind, newest first, _id as tie-breaker: this lets Mongo walk the index instead of sorting.
+  { key: { kind: 1, first_seen_at: -1, _id: -1 }, name: 'kind_first_seen_id' },
   { key: { postcode: 1, kind: 1 }, name: 'postcode_kind' },
   { key: { status: 1 }, name: 'status' },
 ]);
