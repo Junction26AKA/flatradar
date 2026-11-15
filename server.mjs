@@ -29,6 +29,10 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MAX_FAVOURITES = 200;
 const db = await getDb();
 const log = (...a) => console.log(new Date().toISOString(), ...a);
+// The index GET /api/listings pages on (same as scripts/setup-db.mjs). A no-op once it exists; deploys don't run
+// setup-db, so make sure of it here. Not awaited: a slow first build mustn't hold up startup.
+db.collection('listings').createIndex({ kind: 1, first_seen_at: -1, _id: -1 }, { name: 'kind_first_seen_id' })
+  .catch((e) => log('listings index kind_first_seen_id:', e.message));
 
 // ---------- helpers ----------
 function send(res, status, body, headers = {}) {
@@ -168,8 +172,10 @@ async function route(req, res) {
   if (p === '/api/listings' && req.method === 'GET') {
     const kind = url.searchParams.get('kind');
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 500);
+    // Page with ?offset= to get past the 500 cap; _id breaks first_seen_at ties so pages don't overlap or skip.
+    const offset = Math.max(0, Math.floor(Number(url.searchParams.get('offset')) || 0));
     const q = { ...(kind ? { kind } : {}), ...(url.searchParams.get('scored') ? { 'score.deal_pct': { $ne: null } } : {}) };
-    const items = await db.collection('listings').find(q, { projection: { doc_extracts: 0 } }).sort({ first_seen_at: -1 }).limit(limit).toArray();
+    const items = await db.collection('listings').find(q, { projection: { doc_extracts: 0 } }).sort({ first_seen_at: -1, _id: -1 }).skip(offset).limit(limit).toArray();
     return send(res, 200, { items });
   }
 

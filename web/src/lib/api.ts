@@ -26,14 +26,34 @@ export class HttpError extends Error {
 
 const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortError';
 
-export async function getListings(kind?: Kind, limit = 50, signal?: AbortSignal): Promise<Result<Listing[]>> {
-  const qs = new URLSearchParams({ limit: String(limit), ...(kind ? { kind } : {}) });
+export async function getListings(kind?: Kind, limit = 50, signal?: AbortSignal, offset = 0): Promise<Result<Listing[]>> {
+  const qs = new URLSearchParams({ limit: String(limit), ...(offset ? { offset: String(offset) } : {}), ...(kind ? { kind } : {}) });
   try {
     const { items } = await getJson<{ items: Listing[] }>(`/api/listings?${qs}`, signal);
     return { data: items, source: 'live' };
   } catch (e) {
     if (isAbort(e)) throw e;
     return { data: FIXTURES.filter((l) => !kind || l.kind === kind), source: 'fixtures' };
+  }
+}
+
+export const LISTINGS_PAGE = 500; // the server's per-request cap
+const MAX_PAGES = 20; // safety stop: 10,000 listings per kind
+
+/**
+ * The listings after the first page of a kind, one page at a time, handed to `onPage` as each arrives.
+ * Stops at a short page, at MAX_PAGES, or when a page fails (what already arrived stays). Abort ends it quietly.
+ */
+export async function loadMoreListings(kind: Kind, onPage: (items: Listing[]) => void, signal?: AbortSignal): Promise<void> {
+  try {
+    for (let page = 1; page < MAX_PAGES; page++) {
+      const r = await getListings(kind, LISTINGS_PAGE, signal, page * LISTINGS_PAGE);
+      if (r.source !== 'live') return;
+      if (r.data.length) onPage(r.data);
+      if (r.data.length < LISTINGS_PAGE) return;
+    }
+  } catch (e) {
+    if (!isAbort(e)) throw e;
   }
 }
 
