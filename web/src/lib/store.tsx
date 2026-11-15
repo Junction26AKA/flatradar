@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
-import { getListing, getListings, type Source } from './api';
+import { getAllListings, getListing, type Source } from './api';
 import { useStream } from './stream';
 import type { CallEnd, CallStart, Kind, Listing, StreamEvent } from './types';
 
@@ -104,7 +104,7 @@ export function FeedProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Fetch each kind separately: rentals far outnumber sales, so one mixed "newest 100" would hide the sales.
     const ac = new AbortController();
-    Promise.all((['sale', 'rent'] as const).map((k) => getListings(k, 150, ac.signal)))
+    Promise.all((['sale', 'rent'] as const).map((k) => getAllListings(k, ac.signal)))
       .then((rs) => {
         // If either kind came from the server, show only server data: never mix fixtures into a live feed.
         const live = rs.filter((r) => r.source === 'live');
